@@ -1,0 +1,9 @@
+version: '3'
+    
+services:
+    wattpilot:
+        build: .
+        volumes:
+        - .:/code
+        ports:
+            - 8080:8080
