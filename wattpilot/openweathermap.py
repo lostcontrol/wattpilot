@@ -64,4 +64,4 @@ class OpenWeatherMap(WattPilotActor):
             self.logger.error("Timeout connecting to %s", self.__host)
 
     def is_tomorrow_sunny(self):
-        return self.__cloud < 10
+        return self.__cloud < 75
