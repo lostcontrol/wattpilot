@@ -5,4 +5,6 @@ services:
 
 before_install:
   - docker-compose -f docker-compose.development.yml build
+
+script:
   - docker-compose -f docker-compose.development.yml run --rm development python -m pytest -v -s --cov=wattpilot --cov-report term test/
