@@ -15,7 +15,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-
+import argparse
 import connexion
 import unittest.mock
 import configparser
@@ -43,11 +43,20 @@ def setup_logging(log_config):
 def main():
     setup_logging("logging.conf")
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--fake-devices", action="store_true", help="fake the underlying hardware")
+    args = parser.parse_args()
+
     configuration = config()
 
     power = Fronius.start(configuration).proxy()
-    gpio = unittest.mock.Mock()
     weather = OpenWeatherMap.start(configuration).proxy()
+
+    if args.fake_devices:
+        gpio = unittest.mock.Mock()
+    else:
+        from wattpilot.device import Device
+        gpio = Device()
 
     wattpilot = WattPilot.start(configuration, power, gpio, weather).proxy()
     WattPilotApp.wattpilot = wattpilot
@@ -61,6 +70,7 @@ def main():
     finally:
         wattpilot.halt().get()
         pykka.ActorRegistry.stop_all()
+        gpio.cleanup()
 
 
 if __name__ == "__main__":

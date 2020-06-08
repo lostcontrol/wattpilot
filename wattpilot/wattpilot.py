@@ -27,6 +27,7 @@ class Load:
         self.__pin = pin
         self.__gpio = gpio
         self.power = 0
+        gpio.setup(pin)
 
     def set_pin(self, value):
         self.__gpio.set_pin(self.__pin, value)
