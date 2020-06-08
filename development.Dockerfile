@@ -1,7 +1,6 @@
 FROM python:3.8
 
-# Create a non-root user. Please override the UID with your own in
-# backend/.devcontainer/docker-compose.yml
+# Create a non-root user.
 ARG USERNAME=me
 ARG USER_UID=1000
 ARG USER_GID=$USER_UID

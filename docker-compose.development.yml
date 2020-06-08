@@ -1,12 +1,11 @@
 version: "3"
 
 services:
-    wattpilot:
+    development:
         environment:
             - TZ=Europe/Zurich
         build:
             context: .
-            dockerfile: runtime.Dockerfile
-        command: python wattpilot.py --fake-devices
+            dockerfile: development.Dockerfile
         ports:
             - 8080:8080

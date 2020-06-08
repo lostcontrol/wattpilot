@@ -1,0 +1,10 @@
+version: "3"
+
+services:
+    wattpilot:
+        command: python wattpilot.py
+        ports:
+            - 80:8080
+        devices:
+            - "/dev/gpiomem:/dev/gpiomem"
+        restart: unless-stopped
