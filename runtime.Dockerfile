@@ -17,4 +17,3 @@ COPY . /code/
 
 USER $USERNAME
 ENV HOME=/home/$USERNAME
-

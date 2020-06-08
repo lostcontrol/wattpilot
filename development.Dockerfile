@@ -16,7 +16,7 @@ WORKDIR /code
 COPY requirements*.txt /code/
 RUN pip install --no-cache-dir -r requirements-dev.txt
 COPY . /code/
+RUN chown -R $USERNAME /code
 
 USER $USERNAME
 ENV HOME=/home/$USERNAME
-
