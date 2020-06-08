@@ -1,5 +1,8 @@
 # Wattpilot
 
+[![Build Status](https://travis-ci.com/lostcontrol/wattpilot.svg?branch=master)](https://travis-ci.com/lostcontrol/wattpilot)
+[![codecov](https://codecov.io/gh/lostcontrol/wattpilot/branch/master/graph/badge.svg)](https://codecov.io/gh/lostcontrol/wattpilot)
+
 ## Introduction
 
 We have recently installed solar panels (photovoltaic). One of the challenge is to increase your auto-consumption. One of the main consumer we have is the water boiler. It used to run at night to benefit from off-peak tariff. We decided to build a system to pilot the water boiler in a way that it would improve the auto-consumption.
