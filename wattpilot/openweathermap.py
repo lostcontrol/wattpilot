@@ -46,7 +46,8 @@ class OpenWeatherMap(WattPilotActor):
 
     def update_forecast(self):
         now = datetime.now().timestamp()
-        if self.__last_update + 20 * 3600 > now:
+        # Update once an hour max.
+        if self.__last_update + 1 * 3600 > now:
             self.logger.debug("Forecast updated %d seconds ago. Skipping", now - self.__last_update)
             return
 
