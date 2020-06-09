@@ -6,6 +6,6 @@ services:
             - TZ=Europe/Zurich
         build:
             context: .
-            dockerfile: development.Dockerfile
+            dockerfile: docker/development.Dockerfile
         ports:
             - 8080:8080

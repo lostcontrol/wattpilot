@@ -6,7 +6,7 @@ services:
             - TZ=Europe/Zurich
         build:
             context: .
-            dockerfile: runtime.Dockerfile
+            dockerfile: docker/runtime.Dockerfile
         command: python wattpilot.py --fake-devices
         ports:
             - 8080:8080
