@@ -26,6 +26,7 @@ class Device:
 
     def setup(self, pin):
         GPIO.setup(pin, GPIO.OUT)
+        self.set_pin(pin, False)
 
     def cleanup(self):
         GPIO.cleanup()
