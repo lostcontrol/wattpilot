@@ -108,6 +108,8 @@ class Fronius(WattPilotActor):
             self.__last_reading = reading
         except socket.timeout:
             self.logger.error("Timeout connecting to %s", self.__host)
+        except urllib.error.URLError as exception:
+            self.logger.error("Unable to download data: %s", str(exception.reason))
         finally:
             self.do_delay(delay, "run_internal", args=[delay])
 
