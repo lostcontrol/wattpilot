@@ -37,32 +37,40 @@ class OpenWeatherMap(WattPilotActor):
 
         host = "api.openweathermap.org"
         self.__url = f"https://{host}/data/2.5/onecall?lat={lat}&lon={lon}&appid={key}"
-        self.__last_update = 0
         self.__cloud = 100
 
     def download(self):
         with urllib.request.urlopen(self.__url, timeout=10) as f:
             return f.read().decode("ascii")
 
-    def update_forecast(self):
+    @staticmethod
+    def __get_cloudiness(document):
         now = datetime.now().timestamp()
-        # Update once an hour max.
-        if self.__last_update + 1 * 3600 > now:
-            self.logger.debug("Forecast updated %d seconds ago. Skipping", now - self.__last_update)
-            return
+        for forecast in document["daily"]:
+            timestamp = forecast["dt"]
+            if timestamp > now:
+                return timestamp, forecast["clouds"]
+        return 0, 100
 
+    def run(self, delay=3600):
+        self.run_internal(delay)
+
+    def run_internal(self, delay):
         try:
             document = json.loads(self.download())
-            for forecast in document["daily"]:
-                timestamp = forecast["dt"]
-                if timestamp > now:
-                    self.__cloud = forecast["clouds"]
-                    self.__last_update = now
-                    self.logger.info("Updated forecast. Timestamp: %s Cloud: %d%%",
-                                     datetime.fromtimestamp(timestamp), self.__cloud)
-                    return self.__cloud
+            self.__cloud = self.__get_cloudiness(document)
+            timestamp, cloudiness = self.__cloud
+            readable_time = datetime.fromtimestamp(timestamp)
+            self.logger.info("Forecast. Timestamp: %s Cloud: %d%%", readable_time, cloudiness)
         except socket.timeout:
             self.logger.error("Timeout connecting to %s", self.__host)
+        except urllib.error.URLError as exception:
+            self.logger.error("Unable to download data: %s", str(exception.reason))
+        finally:
+            self.do_delay(delay, "run_internal", args=[delay])
 
-    def is_tomorrow_sunny(self):
-        return self.__cloud < 75
+    def get_forecast(self):
+        return self.__cloud
+
+    def get_cloudiness(self):
+        return self.__cloud[1]

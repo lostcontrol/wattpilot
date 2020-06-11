@@ -60,24 +60,15 @@ class TestOpenWeatherMap:
     ])
     def test_update_forecast(self, asset, cloud, mocker, openweathermap):
         mocker.patch.object(OpenWeatherMap, "download").return_value = self.__read_json_asset(asset)
-        assert openweathermap.update_forecast().get() == cloud
+        openweathermap.run.defer()
+        assert openweathermap.get_cloudiness().get() == cloud
 
-    def test_update_once_a_day(self, mocker, openweathermap):
-        download_mock = mocker.patch.object(OpenWeatherMap, "download")
-        download_mock.return_value = self.__read_json_asset("weather01")
-        openweathermap.update_forecast().get()
-        openweathermap.update_forecast().get()
-        download_mock.assert_called_once()
-        with freeze_time("2020-06-08 06:00:00"):
-            openweathermap.update_forecast().get()
-            assert download_mock.call_count == 2
-
-    @pytest.mark.parametrize("asset,sunny", [
-        ("weather01", False),
-        ("weather02", True),
-        ("weather03", True),
+    @pytest.mark.parametrize("asset,forecast", [
+        ("weather01", (1591527600, 83)),
+        ("weather02", (1591527600, 75)),
+        ("weather03", (1591527600, 75)),
     ])
-    def test_is_tomorrow_sunny(self, asset, sunny, mocker, openweathermap):
+    def test_get_forecast(self, asset, forecast, mocker, openweathermap):
         mocker.patch.object(OpenWeatherMap, "download").return_value = self.__read_json_asset(asset)
-        openweathermap.update_forecast.defer()
-        openweathermap.is_tomorrow_sunny().get() == sunny
+        openweathermap.run.defer()
+        assert openweathermap.get_forecast().get() == forecast

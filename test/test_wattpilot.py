@@ -171,8 +171,9 @@ class TestWattPilot:
         wait_with_timeout(lambda: wattpilot.is_force().get())
         gpio.set_pin.assert_has_calls([mocker.call(1, True), mocker.call(2, True)])
 
-    def test_schedule_no_trigger(self, mocker, wattpilot, gpio, power):
+    def test_schedule_no_trigger(self, mocker, wattpilot, gpio, power, weather):
         power.get_power.return_value = FakeFuture(0)
+        weather.get_cloudiness.return_value = FakeFuture(0)
         wattpilot.idle.defer()
         wattpilot.set_schedule_trigger(False).get()
         with freeze_time("1981-05-30 02:00:01", tick=True):
@@ -180,8 +181,9 @@ class TestWattPilot:
             wait_with_timeout(lambda: wattpilot.is_idle().get())
         assert gpio.set_pin.call_count == 0
 
-    def test_schedule_trigger_set(self, mocker, wattpilot, gpio, power):
+    def test_schedule_trigger_set(self, mocker, wattpilot, gpio, power, weather):
         power.get_power.return_value = FakeFuture(0)
+        weather.get_cloudiness.return_value = FakeFuture(0)
         wattpilot.idle.defer()
         wattpilot.set_schedule_trigger(True).get()
         with freeze_time("1981-05-30 02:00:01", tick=True):
@@ -209,7 +211,7 @@ class TestWattPilot:
         power.get_power.return_value = FakeFuture(0)
         wattpilot.idle.defer()
         wattpilot.set_schedule_trigger(False).get()
-        weather.is_sunny_tomorrow.return_value = FakeFuture(True)
+        weather.get_cloudiness.return_value = FakeFuture(0)
         with freeze_time("1981-05-30 02:00:01", tick=True):
             time.sleep(0.1)
             wait_with_timeout(lambda: wattpilot.is_idle().get())
@@ -219,7 +221,7 @@ class TestWattPilot:
         power.get_power.return_value = FakeFuture(0)
         wattpilot.idle.defer()
         wattpilot.set_schedule_trigger(False).get()
-        weather.is_tomorrow_sunny.return_value = FakeFuture(False)
+        weather.get_cloudiness.return_value = FakeFuture(100)
         with freeze_time("1981-05-30 02:00:01", tick=True):
             time.sleep(0.1)
             wait_with_timeout(lambda: wattpilot.is_schedule().get())

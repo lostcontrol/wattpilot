@@ -139,6 +139,10 @@ class WattPilot(WattPilotActor):
         self.logger.info("Entering halt state")
         self.__stop_all_active()
         self.__power.do_cancel.defer()
+        self.__weather.do_cancel.defer()
+
+    def on_exit_halt(self):
+        self.__weather.run.defer(3600)
 
     def on_enter_idle(self):
         self.logger.info("Entering idle state")
@@ -150,7 +154,7 @@ class WattPilot(WattPilotActor):
         now_hour = datetime.now().hour
         if self.__schedule_start <= now_hour < self.__schedule_stop:
             self.__weather.update_forecast.defer()
-            if self.__schedule_trigger or not self.__weather.is_tomorrow_sunny().get():
+            if self.__schedule_trigger or self.__weather.get_cloudiness().get() > 75:
                 self.do_delay(0, "schedule")
             else:
                 self.do_delay(self.DEFAULT_DELAY, "idle")
