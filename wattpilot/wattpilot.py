@@ -120,7 +120,8 @@ class WattPilot(WattPilotActor):
         self.__power = power
         self.__weather = weather
 
-        self.__hysteresis = config.getint("main", "hysteresis")
+        self.__hysteresis_to_grid = config.getint("main", "hysteresis_to_grid")
+        self.__hysteresis_from_grid = config.getint("main", "hysteresis_from_grid")
         self.__schedule_trigger = False
         self.__schedule_start = config.getint("main", "schedule_start")
         self.__schedule_stop = config.getint("main", "schedule_stop")
@@ -163,7 +164,7 @@ class WattPilot(WattPilotActor):
 
     def after_idle_power(self):
         minimum_power = self.__loads.get_minimum_power(self.__active_loads)
-        if minimum_power + self.__hysteresis <= -self.__power.get_power().get():
+        if minimum_power + self.__hysteresis_to_grid <= -self.__power.get_power().get():
             self.do_delay(0, "solar")
 
     def on_exit_idle(self):
@@ -201,7 +202,7 @@ class WattPilot(WattPilotActor):
 
     def after_solar_power(self):
         power = self.__power.get_power().get()
-        if power > self.__hysteresis:
+        if power > self.__hysteresis_from_grid:
             if not self.__active_loads:
                 self.do_delay(0, "idle")
             else:
@@ -209,7 +210,7 @@ class WattPilot(WattPilotActor):
                 load = self.__active_loads.pop()
                 load.set_pin(False)
         else:
-            load = self.__loads.get_load(-power - self.__hysteresis, self.__active_loads)
+            load = self.__loads.get_load(-power - self.__hysteresis_to_grid, self.__active_loads)
             if load is not None:
                 self.logger.info("Turning a load on, power generation at %dW", -power)
                 self.__active_loads.append(load)

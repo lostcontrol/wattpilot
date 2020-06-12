@@ -44,7 +44,8 @@ def weather(mocker):
 def config():
     ini = """
         [main]
-        hysteresis = 200
+        hysteresis_to_grid = 200
+        hysteresis_from_grid = 0
         schedule_start = 2
         schedule_stop = 6
 
