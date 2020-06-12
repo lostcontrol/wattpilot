@@ -70,7 +70,7 @@ class Fronius(WattPilotActor):
 
         self.__callback = None
         self.__last_reading = None
-        self.__power = AverageReadings(maxlen=3)
+        self.__power = AverageReadings(maxlen=2)
 
     def download(self):
         with urllib.request.urlopen(self.__url, timeout=5) as f:
