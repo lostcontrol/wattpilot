@@ -51,6 +51,7 @@ def config():
         hysteresis_from_grid = 0
         schedule_start = 2
         schedule_stop = 6
+        cloudiness_level = 75
 
         [load_1]
         power = 1000

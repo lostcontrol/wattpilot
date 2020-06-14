@@ -125,6 +125,7 @@ class WattPilot(WattPilotActor):
         self.__schedule_trigger = False
         self.__schedule_start = config.getint("main", "schedule_start")
         self.__schedule_stop = config.getint("main", "schedule_stop")
+        self.__cloudiness_level = config.getint("main", "cloudiness_level")
 
     def __stop_all_active(self):
         for load in self.__active_loads:
@@ -151,12 +152,15 @@ class WattPilot(WattPilotActor):
         self.__power.register_callback(self._proxy.update_power).get()
         self.__power.run.defer(60)
 
+    def get_scheduled_by_weather(self):
+        return self.__weather.get_cloudiness().get() > self.__cloudiness_level
+
     def after_idle_power(self):
         minimum_power = self.__loads.get_minimum_power(self.__active_loads)
         if minimum_power + self.__hysteresis_to_grid <= -self.__power.get_power().get():
             self.do_delay(0, "solar")
         elif self.__schedule_start <= datetime.now().hour < self.__schedule_stop:
-            if self.__schedule_trigger or self.__weather.get_cloudiness().get() > 75:
+            if self.__schedule_trigger or self.get_scheduled_by_weather():
                 self.do_delay(0, "schedule")
             else:
                 self.do_delay(self.DEFAULT_DELAY, "idle")
