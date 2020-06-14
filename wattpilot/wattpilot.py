@@ -156,7 +156,6 @@ class WattPilot(WattPilotActor):
         if minimum_power + self.__hysteresis_to_grid <= -self.__power.get_power().get():
             self.do_delay(0, "solar")
         elif self.__schedule_start <= datetime.now().hour < self.__schedule_stop:
-            self.__weather.update_forecast.defer()
             if self.__schedule_trigger or self.__weather.get_cloudiness().get() > 75:
                 self.do_delay(0, "schedule")
             else:

@@ -23,21 +23,24 @@ import pykka
 import pytest
 
 from wattpilot.wattpilot import WattPilot
+from wattpilot.fronius import Fronius
+from wattpilot.openweathermap import OpenWeatherMap
 
 
 @pytest.fixture
 def power(mocker):
-    return mocker.Mock()
+    return mocker.Mock(spec=Fronius)
 
 
 @pytest.fixture
 def gpio(mocker):
+    # Not possible to import Device because it runs only on RPi
     return mocker.Mock()
 
 
 @pytest.fixture
 def weather(mocker):
-    return mocker.Mock()
+    return mocker.Mock(spec=OpenWeatherMap)
 
 
 @pytest.fixture
