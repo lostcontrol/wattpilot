@@ -121,7 +121,7 @@ class TestWattPilot:
         power.get_power.return_value = FakeFuture(-2000)
         wattpilot.idle.defer()
         wattpilot.update_power().get()
-        wait_with_timeout(lambda: wattpilot.is_solar().get())
+        assert wattpilot.is_solar().get()
         wattpilot.update_power().get()
         gpio.set_pin.assert_has_calls([mocker.call(1, True)])
 
@@ -129,7 +129,7 @@ class TestWattPilot:
         power.get_power.return_value = FakeFuture(-3000)
         wattpilot.idle.defer()
         wattpilot.update_power().get()
-        wait_with_timeout(lambda: wattpilot.is_solar().get())
+        assert wattpilot.is_solar().get()
         wattpilot.update_power().get()
         wattpilot.update_power().get()
         gpio.set_pin.assert_has_calls([mocker.call(2, True), mocker.call(1, True)])
@@ -138,7 +138,7 @@ class TestWattPilot:
         power.get_power.return_value = FakeFuture(-3000)
         wattpilot.idle.defer()
         wattpilot.update_power().get()
-        wait_with_timeout(lambda: wattpilot.is_solar().get())
+        assert wattpilot.is_solar().get()
         wattpilot.update_power().get()
         wattpilot.update_power().get()
         gpio.set_pin.assert_has_calls([mocker.call(2, True), mocker.call(1, True)])
@@ -148,13 +148,13 @@ class TestWattPilot:
         wattpilot.update_power().get()
         gpio.set_pin.assert_has_calls([mocker.call(1, False), mocker.call(2, False)])
         wattpilot.update_power().get()
-        wait_with_timeout(lambda: wattpilot.is_idle().get())
+        assert wattpilot.is_idle().get()
 
     def test_two_loads_then_one_and_two(self, mocker, wattpilot, gpio, power):
         power.get_power.return_value = FakeFuture(-3000)
         wattpilot.idle.defer()
         wattpilot.update_power().get()
-        wait_with_timeout(lambda: wattpilot.is_solar().get())
+        assert wattpilot.is_solar().get()
         wattpilot.update_power().get()
         wattpilot.update_power().get()
         gpio.set_pin.assert_has_calls([mocker.call(2, True), mocker.call(1, True)])
@@ -173,7 +173,7 @@ class TestWattPilot:
         power.get_power.return_value = FakeFuture(0)
         wattpilot.idle.defer()
         wattpilot.force.defer()
-        wait_with_timeout(lambda: wattpilot.is_force().get())
+        assert wattpilot.is_force().get()
         gpio.set_pin.assert_has_calls([mocker.call(1, True), mocker.call(2, True)])
 
     def test_schedule_no_trigger(self, mocker, wattpilot, gpio, power, weather):
@@ -182,8 +182,8 @@ class TestWattPilot:
         wattpilot.idle.defer()
         wattpilot.set_schedule_trigger(False).get()
         with freeze_time("1981-05-30 02:00:01", tick=True):
-            time.sleep(0.1)
-            wait_with_timeout(lambda: wattpilot.is_idle().get())
+            wattpilot.update_power().get()
+            assert wattpilot.is_idle().get()
         assert gpio.set_pin.call_count == 0
 
     def test_schedule_trigger_set(self, mocker, wattpilot, gpio, power, weather):
@@ -192,8 +192,8 @@ class TestWattPilot:
         wattpilot.idle.defer()
         wattpilot.set_schedule_trigger(True).get()
         with freeze_time("1981-05-30 02:00:01", tick=True):
-            time.sleep(0.1)
-            wait_with_timeout(lambda: wattpilot.is_schedule().get())
+            wattpilot.update_power().get()
+            assert wattpilot.is_schedule().get()
         gpio.set_pin.assert_has_calls([mocker.call(1, True), mocker.call(2, True)])
 
     def test_schedule_start_and_stop(self, mocker, wattpilot, gpio, power):
@@ -202,13 +202,12 @@ class TestWattPilot:
         # Start
         wattpilot.set_schedule_trigger(True).get()
         with freeze_time("1981-05-30 02:00:01", tick=True):
-            time.sleep(0.1)
-            wait_with_timeout(lambda: wattpilot.is_schedule().get())
+            wattpilot.update_power().get()
+            assert wattpilot.is_schedule().get()
         gpio.set_pin.assert_has_calls([mocker.call(1, True), mocker.call(2, True)])
         # Stop
         gpio.set_pin.reset_mock()
         with freeze_time("1981-05-30 06:00:01", tick=True):
-            time.sleep(0.1)
             wait_with_timeout(lambda: wattpilot.is_idle().get())
         gpio.set_pin.assert_has_calls([mocker.call(1, False), mocker.call(2, False)])
 
@@ -218,8 +217,8 @@ class TestWattPilot:
         wattpilot.set_schedule_trigger(False).get()
         weather.get_cloudiness.return_value = FakeFuture(0)
         with freeze_time("1981-05-30 02:00:01", tick=True):
-            time.sleep(0.1)
-            wait_with_timeout(lambda: wattpilot.is_idle().get())
+            wattpilot.update_power().get()
+            assert wattpilot.is_idle().get()
         assert gpio.set_pin.call_count == 0
 
     def test_schedule_no_trigger_not_sunny_tomorrow(self, mocker, wattpilot, gpio, power, weather):
@@ -228,6 +227,6 @@ class TestWattPilot:
         wattpilot.set_schedule_trigger(False).get()
         weather.get_cloudiness.return_value = FakeFuture(100)
         with freeze_time("1981-05-30 02:00:01", tick=True):
-            time.sleep(0.1)
-            wait_with_timeout(lambda: wattpilot.is_schedule().get())
+            wattpilot.update_power().get()
+            assert wattpilot.is_schedule().get()
         gpio.set_pin.assert_has_calls([mocker.call(1, True), mocker.call(2, True)])

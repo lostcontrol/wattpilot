@@ -103,7 +103,6 @@ class WattPilot(WattPilotActor):
             "schedule",
             "force",
         ], "idle", after=self.after_idle_power)
-        self.__machine.add_transition("idle", "idle", None, after=self.after_idle_power)
         self.__machine.add_transition("update_power", "idle", None, after=self.after_idle_power)
         self.__machine.add_transition("force", [
             "idle",
@@ -162,10 +161,6 @@ class WattPilot(WattPilotActor):
         elif self.__schedule_start <= datetime.now().hour < self.__schedule_stop:
             if self.__schedule_trigger or self.get_scheduled_by_weather():
                 self.do_delay(0, "schedule")
-            else:
-                self.do_delay(self.DEFAULT_DELAY, "idle")
-        else:
-            self.do_delay(self.DEFAULT_DELAY, "idle")
 
     def on_exit_idle(self):
         self.logger.info("Exiting idle state")
