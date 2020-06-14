@@ -20,31 +20,9 @@ import pykka
 from transitions.extensions import HierarchicalMachine as Machine
 from datetime import datetime
 import logging
-import functools
-import re
 from threading import Timer
 
 logger = logging.getLogger(__name__)
-
-
-class StopRepeatException(Exception):
-    pass
-
-
-def do_repeat():
-    def wrap(func):
-        @functools.wraps(func)
-        def wrapped_func(self, *args, **kwargs):
-            try:
-                func(self, *args, **kwargs)
-            except StopRepeatException:
-                pass
-            else:
-                method = re.sub("on_enter_", "do_repeat_", func.__name__)
-                function = getattr(self._proxy, method)
-                function.defer()
-        return wrapped_func
-    return wrap
 
 
 class WattPilotModel(Machine):
