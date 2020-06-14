@@ -102,8 +102,8 @@ class WattPilot(WattPilotActor):
             "solar",
             "schedule",
             "force",
-        ], "idle", after=self.after_idle)
-        self.__machine.add_transition("idle", "idle", None, after=self.after_idle)
+        ], "idle", after=self.after_idle_power)
+        self.__machine.add_transition("idle", "idle", None, after=self.after_idle_power)
         self.__machine.add_transition("update_power", "idle", None, after=self.after_idle_power)
         self.__machine.add_transition("force", [
             "idle",
@@ -151,9 +151,11 @@ class WattPilot(WattPilotActor):
         self.__power.register_callback(self._proxy.update_power).get()
         self.__power.run.defer(60)
 
-    def after_idle(self):
-        now_hour = datetime.now().hour
-        if self.__schedule_start <= now_hour < self.__schedule_stop:
+    def after_idle_power(self):
+        minimum_power = self.__loads.get_minimum_power(self.__active_loads)
+        if minimum_power + self.__hysteresis_to_grid <= -self.__power.get_power().get():
+            self.do_delay(0, "solar")
+        elif self.__schedule_start <= datetime.now().hour < self.__schedule_stop:
             self.__weather.update_forecast.defer()
             if self.__schedule_trigger or self.__weather.get_cloudiness().get() > 75:
                 self.do_delay(0, "schedule")
@@ -161,11 +163,6 @@ class WattPilot(WattPilotActor):
                 self.do_delay(self.DEFAULT_DELAY, "idle")
         else:
             self.do_delay(self.DEFAULT_DELAY, "idle")
-
-    def after_idle_power(self):
-        minimum_power = self.__loads.get_minimum_power(self.__active_loads)
-        if minimum_power + self.__hysteresis_to_grid <= -self.__power.get_power().get():
-            self.do_delay(0, "solar")
 
     def on_exit_idle(self):
         self.logger.info("Exiting idle state")
