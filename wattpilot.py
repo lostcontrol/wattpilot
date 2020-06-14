@@ -20,6 +20,7 @@ import connexion
 import unittest.mock
 import configparser
 import logging.config
+import signal
 import os
 import pykka
 
@@ -40,7 +41,14 @@ def setup_logging(log_config):
         logging.config.fileConfig(log_config, disable_existing_loggers=False)
 
 
+def handle_sigterm(*args):
+    raise KeyboardInterrupt()
+
+
 def main():
+    # Docker stop containers using SIGTERM
+    signal.signal(signal.SIGTERM, handle_sigterm)
+
     setup_logging("logging.conf")
 
     parser = argparse.ArgumentParser()
