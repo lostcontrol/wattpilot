@@ -15,6 +15,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import copy
 from datetime import datetime
 import logging
 
@@ -28,6 +29,10 @@ class Load:
         self.__gpio = gpio
         self.power = 0
         gpio.setup(pin)
+
+    @property
+    def pin(self):
+        return self.__pin
 
     def set_pin(self, value):
         self.__gpio.set_pin(self.__pin, value)
@@ -125,6 +130,9 @@ class WattPilot(WattPilotActor):
         self.__schedule_start = config.getint("main", "schedule_start")
         self.__schedule_stop = config.getint("main", "schedule_stop")
         self.__cloudiness_level = config.getint("main", "cloudiness_level")
+
+    def get_active_loads(self):
+        return copy.deepcopy(self.__active_loads)
 
     def __stop_all_active(self):
         for load in self.__active_loads:

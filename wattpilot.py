@@ -67,7 +67,9 @@ def main():
         gpio = Device()
 
     wattpilot = WattPilot.start(configuration, power, gpio, weather).proxy()
+
     WattPilotApp.wattpilot = wattpilot
+    WattPilotApp.openweathermap = weather
 
     wattpilot.idle.defer()
 

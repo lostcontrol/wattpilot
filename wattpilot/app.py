@@ -15,9 +15,13 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+from datetime import datetime
+
+
 class WattPilotApp:
 
     wattpilot = None
+    openweathermap = None
 
     @staticmethod
     def get_current_state():
@@ -38,8 +42,23 @@ class WattPilotApp:
 
     @staticmethod
     def get_schedule_trigger():
-        return WattPilotApp.wattpilot.get_schedule_trigger().get()
+        return {"trigger": WattPilotApp.wattpilot.get_schedule_trigger().get()}
 
     @staticmethod
     def set_schedule_trigger(trigger):
-        return WattPilotApp.wattpilot.set_schedule_trigger(trigger).get()
+        return WattPilotApp.wattpilot.set_schedule_trigger(trigger["trigger"]).get()
+
+    @staticmethod
+    def get_weather_forecast():
+        timestamp, cloudiness = WattPilotApp.openweathermap.get_forecast().get()
+        will_run = WattPilotApp.wattpilot.get_scheduled_by_weather().get()
+        return {
+            "timestamp": datetime.fromtimestamp(timestamp),
+            "cloudiness": cloudiness,
+            "will_run": will_run
+        }
+
+    @staticmethod
+    def get_loads():
+        loads = WattPilotApp.wattpilot.get_active_loads().get()
+        return [{"pin": load.pin, "state": True} for load in loads]

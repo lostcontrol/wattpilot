@@ -41,7 +41,7 @@ paths:
         200:
           description: Returns the trigger state
           schema:
-            type: "boolean"
+            $ref: "#/definitions/Trigger"
     post:
       operationId: "wattpilot.app.WattPilotApp.set_schedule_trigger"
       summary: Set/unset the schedule trigger
@@ -51,12 +51,65 @@ paths:
           description: "Value for the next schedule trigger"
           required: true
           schema:
-            type: "boolean"
+            $ref: "#/definitions/Trigger"
       responses:
         405:
           description: "Invalid input"
+  /weather:
+    get:
+      operationId: "wattpilot.app.WattPilotApp.get_weather_forecast"
+      summary: Get the current weather forecast
+      responses:
+        200:
+          description: Returns the weather forecast
+          schema:
+            $ref: "#/definitions/Weather"
+  /loads:
+    get:
+      operationId: "wattpilot.app.WattPilotApp.get_loads"
+      summary: Get the current load states
+      responses:
+        200:
+          description: Returns the load states
+          schema:
+            $ref: "#/definitions/Loads"
 
 definitions:
+  Load:
+    type: object
+    required:
+      - pin
+      - state
+    properties:
+      pin:
+        type: integer
+      state:
+        type: boolean
+  Loads:
+    type: array
+    items:
+      $ref: "#/definitions/Load"
+  Weather:
+    type: object
+    required:
+      - cloudiness
+      - will_run
+      - timestamp
+    properties:
+      cloudiness:
+        type: integer
+      will_run:
+        type: boolean
+      timestamp:
+        type: string
+        format: date-time
+  Trigger:
+    type: object
+    required:
+      - trigger
+    properties:
+      trigger:
+        type: "boolean"
   State:
     type: object
     required:
