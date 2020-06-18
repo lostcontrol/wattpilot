@@ -23,6 +23,7 @@ import logging.config
 import signal
 import os
 import pykka
+import flask_cors
 
 from wattpilot.app import WattPilotApp
 from wattpilot.wattpilot import WattPilot
@@ -75,6 +76,9 @@ def main():
 
     app = connexion.FlaskApp(__name__, specification_dir="openapi/")
     app.add_api("swagger.yaml")
+
+    flask_cors.CORS(app.app)
+
     try:
         app.run(port=8080)
     finally:
