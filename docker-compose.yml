@@ -9,4 +9,4 @@ services:
             dockerfile: docker/runtime.Dockerfile
         command: python wattpilot.py --fake-devices
         ports:
-            - 8080:8080
+            - 8088:8080
