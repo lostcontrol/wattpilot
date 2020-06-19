@@ -69,7 +69,7 @@ def main():
         temperature_sensor.value.return_value = 56.7
     else:
         gpio = Device()
-        temperature_sensor = TempSensorDevice(configuration.get("temperature", "address"))
+        temperature_sensor = TempSensorDevice("boiler", configuration.get("temperature", "address"))
 
     temperature = Temperature.start(configuration, temperature_sensor).proxy()
     wattpilot = WattPilot.start(configuration, power, gpio, weather, temperature).proxy()
