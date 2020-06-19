@@ -25,6 +25,7 @@ import pytest
 from wattpilot.wattpilot import WattPilot
 from wattpilot.fronius import Fronius
 from wattpilot.openweathermap import OpenWeatherMap
+from wattpilot.temperature import Temperature
 
 
 @pytest.fixture
@@ -41,6 +42,11 @@ def gpio(mocker):
 @pytest.fixture
 def weather(mocker):
     return mocker.Mock(spec=OpenWeatherMap)
+
+
+@pytest.fixture
+def temperature(mocker):
+    return mocker.Mock(spec=Temperature)
 
 
 @pytest.fixture
@@ -67,10 +73,10 @@ def config():
 
 
 @pytest.fixture
-def wattpilot(mocker, config, power, gpio, weather):
+def wattpilot(mocker, config, power, gpio, weather, temperature):
     WattPilot.DEFAULT_DELAY = 0.01
     with freeze_time("1981-05-30 00:00:01"):
-        wattpilot = WattPilot.start(config, power, gpio, weather).proxy()
+        wattpilot = WattPilot.start(config, power, gpio, weather, temperature).proxy()
         yield wattpilot
         wattpilot.halt.defer()
         assert wattpilot.is_halt().get()

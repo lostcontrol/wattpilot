@@ -29,6 +29,8 @@ from wattpilot.app import WattPilotApp
 from wattpilot.wattpilot import WattPilot
 from wattpilot.fronius import Fronius
 from wattpilot.openweathermap import OpenWeatherMap
+from wattpilot.temperature import Temperature
+from wattpilot.device import Device, TempSensorDevice
 
 
 def config():
@@ -63,15 +65,20 @@ def main():
 
     if args.fake_devices:
         gpio = unittest.mock.Mock()
+        temperature_sensor = unittest.mock.Mock()
+        temperature_sensor.value.return_value = 56.7
     else:
-        from wattpilot.device import Device
         gpio = Device()
+        temperature_sensor = TempSensorDevice(configuration.get("temperature", "address"))
 
-    wattpilot = WattPilot.start(configuration, power, gpio, weather).proxy()
+    temperature = Temperature.start(configuration, temperature_sensor).proxy()
+    wattpilot = WattPilot.start(configuration, power, gpio, weather, temperature).proxy()
 
     WattPilotApp.wattpilot = wattpilot
     WattPilotApp.openweathermap = weather
+    WattPilotApp.temperature = temperature
 
+    temperature.run.defer()
     wattpilot.idle.defer()
 
     app = connexion.FlaskApp(__name__, specification_dir="openapi/")

@@ -92,7 +92,7 @@ class WattPilot(WattPilotActor):
 
     DEFAULT_DELAY = 60
 
-    def __init__(self, config, power, gpio, weather):
+    def __init__(self, config, power, gpio, weather, temperature):
         super().__init__()
 
         self.logger = logging.getLogger(__name__)
@@ -123,6 +123,7 @@ class WattPilot(WattPilotActor):
         self.__active_loads = []
         self.__power = power
         self.__weather = weather
+        self.__temperature = temperature
 
         self.__hysteresis_to_grid = config.getint("main", "hysteresis_to_grid")
         self.__hysteresis_from_grid = config.getint("main", "hysteresis_from_grid")

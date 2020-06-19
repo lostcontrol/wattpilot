@@ -64,6 +64,15 @@ paths:
           description: Returns the weather forecast
           schema:
             $ref: "#/definitions/Weather"
+  /temperature:
+    get:
+      operationId: "wattpilot.app.WattPilotApp.get_temperature"
+      summary: Get the current temperature
+      responses:
+        200:
+          description: Returns the temperature
+          schema:
+            $ref: "#/definitions/Temperature"
   /loads:
     get:
       operationId: "wattpilot.app.WattPilotApp.get_loads"
@@ -103,6 +112,13 @@ definitions:
       timestamp:
         type: string
         format: date-time
+  Temperature:
+    type: object
+    required:
+      - temperature
+    properties:
+      temperature:
+        type: integer
   Trigger:
     type: object
     required:

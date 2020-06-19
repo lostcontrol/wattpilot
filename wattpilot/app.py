@@ -22,6 +22,7 @@ class WattPilotApp:
 
     wattpilot = None
     openweathermap = None
+    temperature = None
 
     @staticmethod
     def get_current_state():
@@ -62,3 +63,7 @@ class WattPilotApp:
     def get_loads():
         loads = WattPilotApp.wattpilot.get_active_loads().get()
         return [{"pin": load.pin, "state": True} for load in loads]
+
+    @staticmethod
+    def get_temperature():
+        return {"temperature": WattPilotApp.temperature.get_temperature().get()}
