@@ -66,4 +66,4 @@ class WattPilotApp:
 
     @staticmethod
     def get_temperature():
-        return {"temperature": WattPilotApp.temperature.get_temperature().get()}
+        return {"temperature": round(WattPilotApp.temperature.get_temperature().get(), 1)}
