@@ -20,28 +20,32 @@ import re
 import time
 
 logger = logging.getLogger(__name__)
-import RPi.GPIO as GPIO
 
 
 class Device:
 
     def __init__(self):
+        import RPi.GPIO as GPIO
         GPIO.setwarnings(False)
         GPIO.setmode(GPIO.BCM)
 
     def setup(self, pin):
+        import RPi.GPIO as GPIO
         GPIO.setup(pin, GPIO.OUT)
         self.set_pin(pin, False)
 
     def cleanup(self):
+        import RPi.GPIO as GPIO
         GPIO.cleanup()
 
     def set_pin(self, pin, value):
+        import RPi.GPIO as GPIO
         assert isinstance(pin, int)
         assert isinstance(value, bool)
         GPIO.output(pin, GPIO.LOW if value else GPIO.HIGH)
 
     def get_pin(self, pin):
+        import RPi.GPIO as GPIO
         return GPIO.input(pin) == GPIO.LOW
 
 
