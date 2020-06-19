@@ -38,3 +38,41 @@ class Device:
 
     def get_pin(self, pin):
         return GPIO.input(pin) == GPIO.LOW
+
+
+class TempSensorDevice:
+
+    CRE = re.compile(r" t=(-?\d+)$")
+
+    def __init__(self, name, address, offset=0.0):
+        self.__address = address
+        self.__path = "/sys/bus/w1/devices/%s/w1_slave" % address
+        self.__offset = offset
+
+    def __read_temp_raw(self):
+        with open(self.__path, "r") as f:
+            return [line.strip() for line in f.readlines()]
+
+    def value(self):
+        # Retry up to 3 times
+        try:
+            for _ in range(3):
+                raw = self.__read_temp_raw()
+                if len(raw) == 2:
+                    crc, data = raw
+                    if crc.endswith("YES"):
+                        logger.debug("Temp sensor raw data: %s" % str(data))
+                        # CRC valid, read the data
+                        match = TempSensorDevice.CRE.search(data)
+                        temperature = int(match.group(1)) / 1000. + self.__offset if match else None
+                        # Range check, sometimes bad values pass the CRC check
+                        if 5 < temperature < 100:
+                            return temperature
+                        else:
+                            logger.debug("Temp outside range: %f" % temperature)
+                    else:
+                        logger.debug("Bad CRC: %s" % str(raw))
+                time.sleep(0.1)
+        except OSError:
+            logger.exception("Unable to read temperature (%s)" % self.name)
+        return None
