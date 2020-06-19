@@ -22,7 +22,7 @@ import time
 logger = logging.getLogger(__name__)
 
 
-class Device:
+class GpioDevice:
 
     def __init__(self):
         import RPi.GPIO as GPIO

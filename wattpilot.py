@@ -30,7 +30,7 @@ from wattpilot.wattpilot import WattPilot
 from wattpilot.fronius import Fronius
 from wattpilot.openweathermap import OpenWeatherMap
 from wattpilot.temperature import Temperature
-from wattpilot.device import Device, TempSensorDevice
+from wattpilot.device import GpioDevice, TempSensorDevice
 
 
 def config():
@@ -68,7 +68,7 @@ def main():
         temperature_sensor = unittest.mock.Mock()
         temperature_sensor.value.return_value = 56.7
     else:
-        gpio = Device()
+        gpio = GpioDevice()
         temperature_sensor = TempSensorDevice("boiler", configuration.get("temperature", "address"))
 
     temperature = Temperature.start(configuration, temperature_sensor).proxy()
