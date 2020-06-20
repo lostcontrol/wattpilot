@@ -131,6 +131,8 @@ class WattPilot(WattPilotActor):
         self.__schedule_start = config.getint("main", "schedule_start")
         self.__schedule_stop = config.getint("main", "schedule_stop")
         self.__cloudiness_level = config.getint("main", "cloudiness_level")
+        self.__temperature_schedule = config.getint("temperature", "temperature_schedule")
+        self.__temperature_solar = config.getint("temperature", "temperature_solar")
 
     def get_active_loads(self):
         return copy.deepcopy(self.__active_loads)
@@ -163,13 +165,29 @@ class WattPilot(WattPilotActor):
     def get_scheduled_by_weather(self):
         return self.__weather.get_cloudiness().get() > self.__cloudiness_level
 
+    def check_temperature_min(self, limit, hysteresis=2):
+        temperature = self.__temperature.get_temperature().get()
+        check = temperature < limit - hysteresis
+        if check:
+            self.logger.info("Temperature low: %.2f", temperature)
+        return check
+
+    def check_temperature_max(self, limit, hysteresis=0.5):
+        temperature = self.__temperature.get_temperature().get()
+        check = temperature > limit + hysteresis
+        if check:
+            self.logger.info("Temperature high: %.2f", temperature)
+        return check
+
     def after_idle_power(self):
         minimum_power = self.__loads.get_minimum_power(self.__active_loads)
         if minimum_power + self.__hysteresis_to_grid <= -self.__power.get_power().get():
-            self.do_delay(0, "solar")
+            if self.check_temperature_min(self.__temperature_solar):
+                self.do_delay(0, "solar")
         elif self.__schedule_start <= datetime.now().hour < self.__schedule_stop:
             if self.__schedule_trigger or self.get_scheduled_by_weather():
-                self.do_delay(0, "schedule")
+                if self.check_temperature_min(self.__temperature_schedule):
+                    self.do_delay(0, "schedule")
 
     def on_exit_idle(self):
         self.logger.info("Exiting idle state")
@@ -192,6 +210,8 @@ class WattPilot(WattPilotActor):
     def after_schedule(self):
         if datetime.now().hour >= self.__schedule_stop:
             self.do_delay(0, "idle")
+        elif self.check_temperature_max(self.__temperature_schedule):
+            self.do_delay(0, "idle")
         else:
             self.do_delay(self.DEFAULT_DELAY, "schedule")
 
@@ -206,7 +226,9 @@ class WattPilot(WattPilotActor):
 
     def after_solar_power(self):
         power = self.__power.get_power().get()
-        if power > self.__hysteresis_from_grid:
+        if self.check_temperature_max(self.__temperature_solar):
+            self.do_delay(0, "idle")
+        elif power > self.__hysteresis_from_grid:
             if not self.__active_loads:
                 self.do_delay(0, "idle")
             else:

@@ -46,7 +46,9 @@ def weather(mocker):
 
 @pytest.fixture
 def temperature(mocker):
-    return mocker.Mock(spec=Temperature)
+    mock = mocker.Mock(spec=Temperature)
+    mock.get_temperature.return_value = FakeFuture(50)
+    return mock
 
 
 @pytest.fixture
@@ -58,6 +60,10 @@ def config():
         schedule_start = 2
         schedule_stop = 6
         cloudiness_level = 75
+
+        [temperature]
+        temperature_schedule = 50
+        temperature_solar = 60
 
         [load_1]
         power = 1000
@@ -131,6 +137,18 @@ class TestWattPilot:
         wattpilot.update_power().get()
         gpio.set_pin.assert_has_calls([mocker.call(1, True)])
 
+    def test_idle_enough_power_for_one_load_then_temperature_high(self, mocker, wattpilot, gpio,
+                                                                  power, temperature):
+        power.get_power.return_value = FakeFuture(-2000)
+        wattpilot.idle.defer()
+        wattpilot.update_power().get()
+        assert wattpilot.is_solar().get()
+        wattpilot.update_power().get()
+        gpio.set_pin.assert_has_calls([mocker.call(1, True)])
+        temperature.get_temperature.return_value = FakeFuture(60.51)
+        wattpilot.update_power().get()
+        assert wattpilot.is_idle().get()
+
     def test_idle_enough_power_for_two_loads(self, mocker, wattpilot, gpio, power):
         power.get_power.return_value = FakeFuture(-3000)
         wattpilot.idle.defer()
@@ -192,9 +210,10 @@ class TestWattPilot:
             assert wattpilot.is_idle().get()
         assert gpio.set_pin.call_count == 0
 
-    def test_schedule_trigger_set(self, mocker, wattpilot, gpio, power, weather):
+    def test_schedule_trigger_set(self, mocker, wattpilot, gpio, power, weather, temperature):
         power.get_power.return_value = FakeFuture(0)
         weather.get_cloudiness.return_value = FakeFuture(0)
+        temperature.get_temperature.return_value = FakeFuture(40)
         wattpilot.idle.defer()
         wattpilot.set_schedule_trigger(True).get()
         with freeze_time("1981-05-30 02:00:01", tick=True):
@@ -202,8 +221,9 @@ class TestWattPilot:
             assert wattpilot.is_schedule().get()
         gpio.set_pin.assert_has_calls([mocker.call(1, True), mocker.call(2, True)])
 
-    def test_schedule_start_and_stop(self, mocker, wattpilot, gpio, power):
+    def test_schedule_start_and_stop(self, mocker, wattpilot, gpio, power, temperature):
         power.get_power.return_value = FakeFuture(0)
+        temperature.get_temperature.return_value = FakeFuture(40)
         wattpilot.idle.defer()
         # Start
         wattpilot.set_schedule_trigger(True).get()
@@ -227,8 +247,10 @@ class TestWattPilot:
             assert wattpilot.is_idle().get()
         assert gpio.set_pin.call_count == 0
 
-    def test_schedule_no_trigger_not_sunny_tomorrow(self, mocker, wattpilot, gpio, power, weather):
+    def test_schedule_no_trigger_not_sunny_tomorrow(self, mocker, wattpilot, gpio, power, weather,
+                                                    temperature):
         power.get_power.return_value = FakeFuture(0)
+        temperature.get_temperature.return_value = FakeFuture(40)
         wattpilot.idle.defer()
         wattpilot.set_schedule_trigger(False).get()
         weather.get_cloudiness.return_value = FakeFuture(100)
@@ -236,3 +258,13 @@ class TestWattPilot:
             wattpilot.update_power().get()
             assert wattpilot.is_schedule().get()
         gpio.set_pin.assert_has_calls([mocker.call(1, True), mocker.call(2, True)])
+
+    def test_schedule_no_trigger_not_sunny_tomorrow_temperature_high(self, mocker, wattpilot, gpio,
+                                                                     power, weather, temperature):
+        power.get_power.return_value = FakeFuture(0)
+        wattpilot.idle.defer()
+        wattpilot.set_schedule_trigger(False).get()
+        weather.get_cloudiness.return_value = FakeFuture(100)
+        with freeze_time("1981-05-30 02:00:01", tick=True):
+            wattpilot.update_power().get()
+            assert wattpilot.is_idle().get()
