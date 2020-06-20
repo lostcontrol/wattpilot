@@ -26,6 +26,7 @@ class Temperature(WattPilotActor):
         super().__init__()
         self.logger = logging.getLogger(__name__)
         self.__sensor = sensor
+        self.__temperature = 100
 
     def run(self, delay=60):
         self.run_internal(delay)
@@ -34,6 +35,9 @@ class Temperature(WattPilotActor):
         try:
             self.__temperature = self.__sensor.value()
             self.logger.info("Temperature: %.1f", self.__temperature)
+        except IOError:
+            self.logger.exception("Unable to read temperature. Returning high value")
+            self.__temperature = 100
         finally:
             self.do_delay(delay, "run_internal", args=[delay])
 
