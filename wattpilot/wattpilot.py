@@ -165,7 +165,7 @@ class WattPilot(WattPilotActor):
     def get_scheduled_by_weather(self):
         return self.__weather.get_cloudiness().get() > self.__cloudiness_level
 
-    def check_temperature_min(self, limit, hysteresis=2):
+    def check_temperature_min(self, limit, hysteresis=1):
         temperature = self.__temperature.get_temperature().get()
         check = temperature < limit - hysteresis
         if check:
