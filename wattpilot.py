@@ -25,12 +25,13 @@ import os
 import pykka
 import flask_cors
 
+from wattpilot.device import GpioDevice, TempSensorDevice
 from wattpilot.app import WattPilotApp
 from wattpilot.wattpilot import WattPilot
 from wattpilot.fronius import Fronius
 from wattpilot.openweathermap import OpenWeatherMap
 from wattpilot.temperature import Temperature
-from wattpilot.device import GpioDevice, TempSensorDevice
+from wattpilot.pvoutput import PVOutput
 
 
 def config():
@@ -72,13 +73,17 @@ def main():
         temperature_sensor = TempSensorDevice("boiler", configuration.get("temperature", "address"))
 
     temperature = Temperature.start(configuration, temperature_sensor).proxy()
+    pvoutput = PVOutput.start(configuration, temperature).proxy()
     wattpilot = WattPilot.start(configuration, power, gpio, weather, temperature).proxy()
 
     WattPilotApp.wattpilot = wattpilot
     WattPilotApp.openweathermap = weather
     WattPilotApp.temperature = temperature
 
-    temperature.run.defer()
+    # Wait for the first temperature to be read
+    temperature.run().get()
+    pvoutput.run.defer()
+
     wattpilot.idle.defer()
 
     app = connexion.FlaskApp(__name__, specification_dir="openapi/")
