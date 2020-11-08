@@ -7,3 +7,5 @@ services:
             - "/dev/gpiomem:/dev/gpiomem"
             - "/dev/mem:/dev/mem"
         restart: unless-stopped
+        logging:
+            driver: "journald"
