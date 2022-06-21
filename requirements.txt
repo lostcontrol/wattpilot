@@ -1,5 +1,5 @@
 Pykka==2.0.2
 transitions==0.8.1
-RPi.GPIO==0.7.0
+RPi.GPIO==0.7.1
 connexion[swagger-ui]==2.7.0
 Flask-Cors==3.0.8
