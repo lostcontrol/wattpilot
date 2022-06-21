@@ -41,7 +41,7 @@ class OpenWeatherMap(WattPilotActor):
 
     def download(self):
         with urllib.request.urlopen(self.__url, timeout=10) as f:
-            return f.read().decode("ascii")
+            return f.read().decode("utf-8")
 
     @staticmethod
     def __get_cloudiness(document):
