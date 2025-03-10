@@ -36,8 +36,8 @@ class OpenWeatherMap(WattPilotActor):
         key = config.get("openweathermap", "key")
 
         host = "api.openweathermap.org"
-        self.__url = f"https://{host}/data/2.5/onecall?lat={lat}&lon={lon}&appid={key}"
-        self.__cloud = 100
+        self.__url = f"https://{host}/data/2.5/forecast?lat={lat}&lon={lon}&appid={key}"
+        self.__cloud = 0, 100
 
     def download(self):
         with urllib.request.urlopen(self.__url, timeout=10) as f:
@@ -46,10 +46,10 @@ class OpenWeatherMap(WattPilotActor):
     @staticmethod
     def __get_cloudiness(document):
         now = datetime.now().timestamp()
-        for forecast in document["daily"]:
+        for forecast in document["list"]:
             timestamp = forecast["dt"]
             if timestamp > now:
-                return timestamp, forecast["clouds"]
+                return timestamp, forecast["clouds"]["all"]
         return 0, 100
 
     def run(self, delay=3600):

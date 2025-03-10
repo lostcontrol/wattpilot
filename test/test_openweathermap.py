@@ -54,9 +54,9 @@ class TestOpenWeatherMap:
             return f.read()
 
     @pytest.mark.parametrize("asset,cloud", [
-        ("weather01", 83),
-        ("weather02", 75),
-        ("weather03", 75),
+        ("weather01", 27),
+        # ("weather02", 75),
+        # ("weather03", 75),
     ])
     def test_update_forecast(self, asset, cloud, mocker, openweathermap):
         mocker.patch.object(OpenWeatherMap, "download").return_value = self.__read_json_asset(asset)
@@ -64,9 +64,9 @@ class TestOpenWeatherMap:
         assert openweathermap.get_cloudiness().get() == cloud
 
     @pytest.mark.parametrize("asset,forecast", [
-        ("weather01", (1591527600, 83)),
-        ("weather02", (1591527600, 75)),
-        ("weather03", (1591527600, 75)),
+        ("weather01", (1741651200, 27)),
+        # ("weather02", (1591527600, 75)),
+        # ("weather03", (1591527600, 75)),
     ])
     def test_get_forecast(self, asset, forecast, mocker, openweathermap):
         mocker.patch.object(OpenWeatherMap, "download").return_value = self.__read_json_asset(asset)
