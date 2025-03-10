@@ -1,4 +1,4 @@
-FROM python:3.8-buster
+FROM python:3.12
 
 # Create a non-root user.
 ARG USERNAME=me
