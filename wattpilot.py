@@ -93,7 +93,7 @@ def main():
     flask_cors.CORS(app.app)
 
     try:
-        app.run(port=8080)
+        app.run(host="0.0.0.0", port=8080)
     finally:
         wattpilot.halt().get()
         pykka.ActorRegistry.stop_all()
