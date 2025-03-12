@@ -18,14 +18,14 @@
 import configparser
 import time
 
-from freezegun import freeze_time
 import pykka
 import pytest
+from freezegun import freeze_time
 
-from wattpilot.wattpilot import WattPilot
 from wattpilot.fronius import Fronius
 from wattpilot.openweathermap import OpenWeatherMap
 from wattpilot.temperature import Temperature
+from wattpilot.wattpilot import WattPilot
 
 
 @pytest.fixture
@@ -94,7 +94,7 @@ def wait_with_timeout(method, timeout=1):
     while not method():
         diff = time.time() - start
         if diff > timeout:
-            assert False, "Timeout"
+            pytest.fail("Timeout")
         time.sleep(0.01)
 
 

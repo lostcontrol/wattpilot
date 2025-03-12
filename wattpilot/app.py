@@ -15,7 +15,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 
 class WattPilotApp:
@@ -54,7 +54,7 @@ class WattPilotApp:
         timestamp, cloudiness = WattPilotApp.openweathermap.get_forecast().get()
         will_run = WattPilotApp.wattpilot.get_scheduled_by_weather().get()
         return {
-            "timestamp": datetime.fromtimestamp(timestamp),
+            "timestamp": datetime.fromtimestamp(timestamp,tz=UTC),
             "cloudiness": cloudiness,
             "will_run": will_run
         }

@@ -15,10 +15,9 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-from datetime import datetime
-import socket
-import urllib
 import logging
+import urllib
+from datetime import UTC, datetime
 
 from .actor import WattPilotActor
 
@@ -39,7 +38,7 @@ class PVOutput(WattPilotActor):
         self.__url = f"{base_url}?key={key}&sid={sid}&d={{date}}&t={{time}}&{field}={{temperature}}"
 
     def send_temperature(self, temperature):
-        now = datetime.now()
+        now = datetime.now(tz=UTC)
         date = now.strftime("%Y%m%d")
         time = now.strftime("%H:%M")
         url = self.__url.format(date=date, time=time, temperature=temperature)
@@ -56,7 +55,7 @@ class PVOutput(WattPilotActor):
         try:
             temperature = self.__temperature.get_temperature().get()
             self.send_temperature(temperature)
-        except socket.timeout:
+        except TimeoutError:
             self.logger.error("Timeout connecting to pvoutput.org")
         except urllib.error.URLError as exception:
             self.logger.error("Unable to download data: %s", str(exception.reason))

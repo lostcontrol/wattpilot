@@ -55,11 +55,11 @@ class TempSensorDevice:
 
     def __init__(self, name, address, offset=0.0):
         self.__address = address
-        self.__path = "/sys/bus/w1/devices/%s/w1_slave" % address
+        self.__path = f"/sys/bus/w1/devices/{address}/w1_slave"
         self.__offset = offset
 
     def __read_temp_raw(self):
-        with open(self.__path, "r") as f:
+        with open(self.__path) as f:
             return [line.strip() for line in f.readlines()]
 
     def value(self):
@@ -70,7 +70,7 @@ class TempSensorDevice:
                 if len(raw) == 2:
                     crc, data = raw
                     if crc.endswith("YES"):
-                        logger.debug("Temp sensor raw data: %s" % str(data))
+                        logger.debug(f"Temp sensor raw data: {data!s}")
                         # CRC valid, read the data
                         match = TempSensorDevice.CRE.search(data)
                         temperature = int(match.group(1)) / 1000. + self.__offset if match else None
@@ -78,10 +78,10 @@ class TempSensorDevice:
                         if 5 < temperature < 100:
                             return temperature
                         else:
-                            logger.debug("Temp outside range: %f" % temperature)
+                            logger.debug(f"Temp outside range: {temperature:f}")
                     else:
-                        logger.debug("Bad CRC: %s" % str(raw))
+                        logger.debug(f"Bad CRC: {raw!s}")
                 time.sleep(0.1)
         except OSError:
-            logger.exception("Unable to read temperature (%s)" % self.name)
+            logger.exception(f"Unable to read temperature ({self.name})")
         return None

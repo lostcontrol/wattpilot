@@ -16,35 +16,37 @@
 	// connected. This is typically a file mount in .devcontainer/docker-compose.yml
 	"workspaceFolder": "/workspace",
 	// Set *default* container specific settings.json values on container create.
-	"settings": {
-		"terminal.integrated.shell.linux": "/bin/bash",
-		"python.linting.flake8Enabled": true,
-		"python.linting.pylintEnabled": false,
-		"python.linting.enabled": true,
-		"python.linting.flake8Args": [
-			"--max-line-length",
-			"100"
-		],
-		"python.formatting.autopep8Args": [
-			"--max-line-length",
-			"100"
-		]
-	},
-	// Add the IDs of extensions you want installed when the container is created.
-	"extensions": [
-		"ms-python.python",
-		"eamodio.gitlens",
-		"maptz.camelcasenavigation",
-		"42crunch.vscode-openapi"
-	]
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// "forwardPorts": [],
-	// Uncomment the next line if you want start specific services in your Docker Compose config.
-	// "runServices": [],
-	// Uncomment the next line if you want to keep your containers running after VS Code shuts down.
-	// "shutdownAction": "none",
-	// Uncomment the next line to run commands after the container is created - for example installing git.
-	// "postCreateCommand": "apt-get update && apt-get install -y git",
-	// Uncomment to connect as a non-root user. See https://aka.ms/vscode-remote/containers/non-root.
-	// "remoteUser": "vscode"
+	"customizations": {
+		"vscode": {
+			"[python]": {
+				"editor.codeActionsOnSave": {
+					"source.fixAll": "explicit",
+					"source.organizeImports": "explicit"
+				},
+				"editor.defaultFormatter": "charliermarsh.ruff"
+			},
+			"editor.rulers": [
+				120
+			],
+			"editor.formatOnSave": true,
+			// Add the IDs of extensions you want installed when the container is created.
+			"extensions": [
+				"tamasfe.even-better-toml",
+				"charliermarsh.ruff",
+				"ms-python.python",
+				"maptz.camelcasenavigation",
+				"42crunch.vscode-openapi"
+			]
+			// Use 'forwardPorts' to make a list of ports inside the container available locally.
+			// "forwardPorts": [],
+			// Uncomment the next line if you want start specific services in your Docker Compose config.
+			// "runServices": [],
+			// Uncomment the next line if you want to keep your containers running after VS Code shuts down.
+			// "shutdownAction": "none",
+			// Uncomment the next line to run commands after the container is created - for example installing git.
+			// "postCreateCommand": "apt-get update && apt-get install -y git",
+			// Uncomment to connect as a non-root user. See https://aka.ms/vscode-remote/containers/non-root.
+			// "remoteUser": "vscode"
+		}
+	}
 }

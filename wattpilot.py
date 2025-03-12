@@ -16,22 +16,23 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import argparse
-import connexion
-import unittest.mock
 import configparser
 import logging.config
-import signal
 import os
-import pykka
-import flask_cors
+import signal
+import unittest.mock
 
-from wattpilot.device import GpioDevice, TempSensorDevice
+import connexion
+import flask_cors
+import pykka
+
 from wattpilot.app import WattPilotApp
-from wattpilot.wattpilot import WattPilot
+from wattpilot.device import GpioDevice, TempSensorDevice
 from wattpilot.fronius import Fronius
 from wattpilot.openweathermap import OpenWeatherMap
-from wattpilot.temperature import Temperature
 from wattpilot.pvoutput import PVOutput
+from wattpilot.temperature import Temperature
+from wattpilot.wattpilot import WattPilot
 
 
 def config():
@@ -46,7 +47,7 @@ def setup_logging(log_config):
 
 
 def handle_sigterm(*args):
-    raise KeyboardInterrupt()
+    raise KeyboardInterrupt
 
 
 def main():

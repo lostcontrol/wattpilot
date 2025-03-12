@@ -16,8 +16,9 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import copy
-from datetime import datetime
 import logging
+from datetime import UTC, datetime
+from typing import Final
 
 from .actor import WattPilotActor, WattPilotModel
 
@@ -82,7 +83,7 @@ class AllLoad:
 
 class WattPilot(WattPilotActor):
 
-    states = [
+    states: Final = [
         "halt",
         "idle",
         "force",
@@ -184,7 +185,7 @@ class WattPilot(WattPilotActor):
         if minimum_power + self.__hysteresis_to_grid <= -self.__power.get_power().get():
             if self.check_temperature_min(self.__temperature_solar):
                 self.do_delay(0, "solar")
-        elif self.__schedule_start <= datetime.now().hour < self.__schedule_stop:
+        elif self.__schedule_start <= datetime.now(tz=UTC).hour < self.__schedule_stop:
             if self.__schedule_trigger or self.get_scheduled_by_weather():
                 if self.check_temperature_min(self.__temperature_schedule):
                     self.do_delay(0, "schedule")
@@ -208,7 +209,7 @@ class WattPilot(WattPilotActor):
         self.__start_all_inactive()
 
     def after_schedule(self):
-        if datetime.now().hour >= self.__schedule_stop:
+        if datetime.now(tz=UTC).hour >= self.__schedule_stop:
             self.do_delay(0, "idle")
         elif self.check_temperature_max(self.__temperature_schedule):
             self.do_delay(0, "idle")

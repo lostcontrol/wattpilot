@@ -18,9 +18,9 @@
 import configparser
 import os
 
-from freezegun import freeze_time
 import pykka
 import pytest
+from freezegun import freeze_time
 
 from wattpilot.openweathermap import OpenWeatherMap
 
@@ -50,10 +50,10 @@ class TestOpenWeatherMap:
 
     @staticmethod
     def __read_json_asset(filename):
-        with open(os.path.join("test/assets", f"{filename}.json"), "r") as f:
+        with open(os.path.join("test/assets", f"{filename}.json")) as f:
             return f.read()
 
-    @pytest.mark.parametrize("asset,cloud", [
+    @pytest.mark.parametrize(("asset", "cloud"), [
         ("weather01", 27),
         # ("weather02", 75),
         # ("weather03", 75),
@@ -63,7 +63,7 @@ class TestOpenWeatherMap:
         openweathermap.run.defer()
         assert openweathermap.get_cloudiness().get() == cloud
 
-    @pytest.mark.parametrize("asset,forecast", [
+    @pytest.mark.parametrize(("asset", "forecast"), [
         ("weather01", (1741651200, 27)),
         # ("weather02", (1591527600, 75)),
         # ("weather03", (1591527600, 75)),

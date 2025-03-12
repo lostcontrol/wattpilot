@@ -17,13 +17,13 @@
 
 import configparser
 
-from freezegun import freeze_time
 import pykka
 import pytest
+from freezegun import freeze_time
 
-from wattpilot.temperature import Temperature
-from wattpilot.pvoutput import PVOutput
 from test.test_wattpilot import FakeFuture
+from wattpilot.pvoutput import PVOutput
+from wattpilot.temperature import Temperature
 
 
 @pytest.fixture

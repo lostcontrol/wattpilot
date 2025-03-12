@@ -18,9 +18,8 @@
 import collections
 import json
 import logging
-import urllib.request
-import socket
 import statistics
+import urllib.request
 
 from .actor import WattPilotActor
 
@@ -106,7 +105,7 @@ class Fronius(WattPilotActor):
                 if self.__callback:
                     self.__callback.defer()
             self.__last_reading = reading
-        except socket.timeout:
+        except TimeoutError:
             self.logger.error("Timeout connecting to %s", self.__host)
         except urllib.error.URLError as exception:
             self.logger.error("Unable to download data: %s", str(exception.reason))
@@ -120,6 +119,7 @@ class Fronius(WattPilotActor):
 if __name__ == "__main__":
     import configparser
     import time
+
     import pykka
 
     ini = """
@@ -130,10 +130,8 @@ if __name__ == "__main__":
     configuration.read_string(ini)
     try:
         fronius = Fronius.start(configuration).proxy()
-        print(fronius.download().get())
         fronius.run.defer()
         for _ in range(10):
             time.sleep(30)
-            print(fronius.power().get())
     finally:
         pykka.ActorRegistry.stop_all()

@@ -15,12 +15,14 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import logging
+from datetime import UTC, datetime
+from threading import Timer
+
 import pykka
+
 # from transitions.extensions import HierarchicalGraphMachine as Machine
 from transitions.extensions import HierarchicalMachine as Machine
-from datetime import datetime
-import logging
-from threading import Timer
 
 logger = logging.getLogger(__name__)
 
@@ -39,10 +41,10 @@ class WattPilotModel(Machine):
         self.__state_time = None
 
     def __update_state_time(self):
-        self.__state_time = datetime.now()
+        self.__state_time = datetime.now(tz=UTC)
 
     def get_time_in_state(self):
-        return datetime.now() - self.__state_time
+        return datetime.now(tz=UTC) - self.__state_time
 
 
 class WattPilotActor(pykka.ThreadingActor):
@@ -63,7 +65,7 @@ class WattPilotActor(pykka.ThreadingActor):
         fsm = pykka.ActorRegistry.get_by_class_name(name)
         if fsm:
             return fsm[0].proxy()
-        logger.critical("Actor %s not found!!!" % name)
+        logger.critical(f"Actor {name} not found!!!")
         return None
 
     def __do_cancel(self):
@@ -75,7 +77,7 @@ class WattPilotActor(pykka.ThreadingActor):
         self.__do_cancel()
 
     def do_delay(self, delay, method, *args, **kwargs):
-        assert type(method) == str
+        assert isinstance(method, str)
         assert delay >= 0
         # Stop an already running timer
         self.__do_cancel()

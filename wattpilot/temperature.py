@@ -35,7 +35,7 @@ class Temperature(WattPilotActor):
         try:
             self.__temperature = self.__sensor.value()
             self.logger.info("Temperature: %.1f", self.__temperature)
-        except IOError:
+        except OSError:
             self.logger.exception("Unable to read temperature. Returning high value")
             self.__temperature = 100
         finally:

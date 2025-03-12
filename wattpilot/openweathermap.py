@@ -18,8 +18,7 @@
 import json
 import logging
 import urllib
-from datetime import datetime
-import socket
+from datetime import UTC, datetime
 
 from .actor import WattPilotActor
 
@@ -45,7 +44,7 @@ class OpenWeatherMap(WattPilotActor):
 
     @staticmethod
     def __get_cloudiness(document):
-        now = datetime.now().timestamp()
+        now = datetime.now(tz=UTC).timestamp()
         for forecast in document["list"]:
             timestamp = forecast["dt"]
             if timestamp > now:
@@ -60,9 +59,9 @@ class OpenWeatherMap(WattPilotActor):
             document = json.loads(self.download())
             self.__cloud = self.__get_cloudiness(document)
             timestamp, cloudiness = self.__cloud
-            readable_time = datetime.fromtimestamp(timestamp)
+            readable_time = datetime.fromtimestamp(timestamp, tz=UTC)
             self.logger.info("Forecast. Timestamp: %s Cloud: %d%%", readable_time, cloudiness)
-        except socket.timeout:
+        except TimeoutError:
             self.logger.error("Timeout connecting to %s", self.__host)
         except urllib.error.URLError as exception:
             self.logger.error("Unable to download data: %s", str(exception.reason))

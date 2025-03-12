@@ -16,7 +16,6 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import configparser
-import time
 import os
 
 import pykka
@@ -58,7 +57,7 @@ class TestFronius:
 
     @staticmethod
     def __read_json_asset(filename):
-        with open(os.path.join("test/assets", f"{filename}.json"), "r") as f:
+        with open(os.path.join("test/assets", f"{filename}.json")) as f:
             return f.read()
 
     def test_run(self, mocker, fronius):
