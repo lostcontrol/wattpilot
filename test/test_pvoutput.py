@@ -55,7 +55,6 @@ def pvoutput(mocker, config, temperature):
 
 
 class TestPVOutput:
-
     def test_send_temperature(self, mocker, pvoutput):
         def call(url):
             assert url == "https://pvoutput.org/service/r2/addstatus.jsp?key=1234&sid=5678&d=20200607&t=06:00&v12=50"

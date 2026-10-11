@@ -54,7 +54,6 @@ def fronius(mocker, config):
 
 
 class TestFronius:
-
     @staticmethod
     def __read_json_asset(filename):
         with open(os.path.join("test/assets", f"{filename}.json")) as f:

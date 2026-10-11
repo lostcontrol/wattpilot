@@ -16,20 +16,28 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 from datetime import UTC, datetime
+from typing import Any
+
+import pykka
+
+from .openweathermap import OpenWeatherMap
+from .temperature import Temperature
+from .wattpilot import WattPilot
 
 
 class WattPilotApp:
-
-    wattpilot = None
-    openweathermap = None
-    temperature = None
+    wattpilot: pykka.ActorProxy[WattPilot] | None = None
+    openweathermap: pykka.ActorProxy[OpenWeatherMap] | None = None
+    temperature: pykka.ActorProxy[Temperature] | None = None
 
     @staticmethod
-    def get_current_state():
+    def get_current_state() -> dict[str, Any]:
+        assert WattPilotApp.wattpilot is not None
         return {"state": WattPilotApp.wattpilot.state.get()}
 
     @staticmethod
-    def set_current_state(state):
+    def set_current_state(state: dict[str, Any]) -> dict[str, Any] | tuple[str, int]:
+        assert WattPilotApp.wattpilot is not None
         result = False
         if state["state"] == "halt":
             result = WattPilotApp.wattpilot.halt().get()
@@ -42,28 +50,30 @@ class WattPilotApp:
         return {} if result else ("Unable to change state", 406)
 
     @staticmethod
-    def get_schedule_trigger():
+    def get_schedule_trigger() -> dict[str, bool]:
+        assert WattPilotApp.wattpilot is not None
         return {"trigger": WattPilotApp.wattpilot.get_schedule_trigger().get()}
 
     @staticmethod
-    def set_schedule_trigger(trigger):
+    def set_schedule_trigger(trigger: dict[str, bool]) -> Any:
+        assert WattPilotApp.wattpilot is not None
         return WattPilotApp.wattpilot.set_schedule_trigger(trigger["trigger"]).get()
 
     @staticmethod
-    def get_weather_forecast():
+    def get_weather_forecast() -> dict[str, Any]:
+        assert WattPilotApp.openweathermap is not None
+        assert WattPilotApp.wattpilot is not None
         timestamp, cloudiness = WattPilotApp.openweathermap.get_forecast().get()
         will_run = WattPilotApp.wattpilot.get_scheduled_by_weather().get()
-        return {
-            "timestamp": datetime.fromtimestamp(timestamp,tz=UTC),
-            "cloudiness": cloudiness,
-            "will_run": will_run
-        }
+        return {"timestamp": datetime.fromtimestamp(timestamp, tz=UTC), "cloudiness": cloudiness, "will_run": will_run}
 
     @staticmethod
-    def get_loads():
+    def get_loads() -> list[dict[str, Any]]:
+        assert WattPilotApp.wattpilot is not None
         loads = WattPilotApp.wattpilot.get_active_loads().get()
         return [{"pin": load.pin, "state": True} for load in loads]
 
     @staticmethod
-    def get_temperature():
+    def get_temperature() -> dict[str, float]:
+        assert WattPilotApp.temperature is not None
         return {"temperature": round(WattPilotApp.temperature.get_temperature().get(), 1)}

@@ -984,6 +984,15 @@ wheels = [
 ]
 
 [[package]]
+name = "types-rpi-gpio"
+version = "0.7.0.20260508"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/5a/5c/8214e3dc5862a06f0d3cf702d60937cb79bc0eb3c07ebc5bcfe2cf0d2567/types_rpi_gpio-0.7.0.20260508.tar.gz", hash = "sha256:03edf1a0cd00cda98029717271fe300cb3a343bf8cdfc240f80390eb9fb2e490", size = 8035, upload-time = "2026-05-08T04:48:44.434Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0b/1a/f0f6ff42530ff737b3448ecd6f38cbf8cb49a0ec8dae9381aa7beb51dc8a/types_rpi_gpio-0.7.0.20260508-py3-none-any.whl", hash = "sha256:ffbeab643c399b9174f4c08da5e6938858fa7a03f66eb8d842c6620af00901da", size = 8261, upload-time = "2026-05-08T04:48:43.665Z" },
+]
+
+[[package]]
 name = "typing-extensions"
 version = "4.16.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1132,6 +1141,7 @@ dev = [
     { name = "pytest-mock" },
     { name = "ruff" },
     { name = "ty" },
+    { name = "types-rpi-gpio" },
 ]
 
 [package.metadata]
@@ -1152,6 +1162,7 @@ dev = [
     { name = "pytest-mock", specifier = ">=3.16.0" },
     { name = "ruff", specifier = ">=0.17.0" },
     { name = "ty", specifier = ">=0.0.86" },
+    { name = "types-rpi-gpio", specifier = ">=0.7.0.20260508" },
 ]
 
 [[package]]

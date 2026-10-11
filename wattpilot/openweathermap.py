@@ -15,17 +15,19 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import configparser
 import json
 import logging
-import urllib
+import urllib.error
+import urllib.request
 from datetime import UTC, datetime
+from typing import Any
 
 from .actor import WattPilotActor
 
 
 class OpenWeatherMap(WattPilotActor):
-
-    def __init__(self, config):
+    def __init__(self, config: configparser.ConfigParser) -> None:
         super().__init__()
 
         self.logger = logging.getLogger(__name__)
@@ -34,16 +36,16 @@ class OpenWeatherMap(WattPilotActor):
         lon = config.get("openweathermap", "lon")
         key = config.get("openweathermap", "key")
 
-        host = "api.openweathermap.org"
-        self.__url = f"https://{host}/data/2.5/forecast?lat={lat}&lon={lon}&appid={key}"
-        self.__cloud = 0, 100
+        self.__host = "api.openweathermap.org"
+        self.__url = f"https://{self.__host}/data/2.5/forecast?lat={lat}&lon={lon}&appid={key}"
+        self.__cloud: tuple[int, int] = (0, 100)
 
-    def download(self):
+    def download(self) -> str:
         with urllib.request.urlopen(self.__url, timeout=10) as f:
             return f.read().decode("utf-8")
 
     @staticmethod
-    def __get_cloudiness(document):
+    def __get_cloudiness(document: dict[str, Any]) -> tuple[int, int]:
         now = datetime.now(tz=UTC).timestamp()
         for forecast in document["list"]:
             timestamp = forecast["dt"]
@@ -51,10 +53,10 @@ class OpenWeatherMap(WattPilotActor):
                 return timestamp, forecast["clouds"]["all"]
         return 0, 100
 
-    def run(self, delay=3600):
+    def run(self, delay: float | int = 3600) -> None:
         self.run_internal(delay)
 
-    def run_internal(self, delay):
+    def run_internal(self, delay: float | int) -> None:
         try:
             document = json.loads(self.download())
             self.__cloud = self.__get_cloudiness(document)
@@ -68,8 +70,8 @@ class OpenWeatherMap(WattPilotActor):
         finally:
             self.do_delay(delay, "run_internal", args=[delay])
 
-    def get_forecast(self):
+    def get_forecast(self) -> tuple[int, int]:
         return self.__cloud
 
-    def get_cloudiness(self):
+    def get_cloudiness(self) -> int:
         return self.__cloud[1]

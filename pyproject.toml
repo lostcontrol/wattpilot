@@ -27,6 +27,7 @@ dev = [
     "pytest-mock>=3.16.0",
     "ruff>=0.17.0",
     "ty>=0.0.86",
+    "types-rpi-gpio>=0.7.0.20260508",
 ]
 
 [build-system]

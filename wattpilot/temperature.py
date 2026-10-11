@@ -15,31 +15,39 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import configparser
 import logging
+from abc import ABC, abstractmethod
 
 from .actor import WattPilotActor
 
 
-class Temperature(WattPilotActor):
+class Sensor(ABC):
+    @abstractmethod
+    def value(self) -> float | None:
+        raise NotImplementedError
 
-    def __init__(self, config, sensor):
+
+class Temperature(WattPilotActor):
+    def __init__(self, config: configparser.ConfigParser, sensor: Sensor) -> None:
         super().__init__()
         self.logger = logging.getLogger(__name__)
-        self.__sensor = sensor
-        self.__temperature = 100
+        self.__sensor: Sensor = sensor
+        self.__temperature: float = 100.0
 
-    def run(self, delay=60):
+    def run(self, delay: float | int = 60) -> None:
         self.run_internal(delay)
 
-    def run_internal(self, delay):
+    def run_internal(self, delay: float | int) -> None:
         try:
-            self.__temperature = self.__sensor.value()
+            val = self.__sensor.value()
+            self.__temperature = 100.0 if val is None else float(val)
             self.logger.info("Temperature: %.1f", self.__temperature)
         except OSError:
             self.logger.exception("Unable to read temperature. Returning high value")
-            self.__temperature = 100
+            self.__temperature = 100.0
         finally:
             self.do_delay(delay, "run_internal", args=[delay])
 
-    def get_temperature(self):
+    def get_temperature(self) -> float:
         return self.__temperature

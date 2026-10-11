@@ -16,50 +16,54 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import collections
+import configparser
 import json
 import logging
 import statistics
+import urllib.error
 import urllib.request
+from typing import Any, Protocol
 
 from .actor import WattPilotActor
 
 
-class EnergyReading:
+class Callback(Protocol):
+    def defer(self) -> Any: ...
 
-    def __init__(self, document):
-        self.__node = document["Body"]["Data"]["0"]
+
+class EnergyReading:
+    def __init__(self, document: dict[str, Any]) -> None:
+        self.__node: dict[str, Any] = document["Body"]["Data"]["0"]
 
     @property
-    def timestamp(self):
+    def timestamp(self) -> int:
         return self.__node["TimeStamp"]
 
     @property
-    def consumed(self):
+    def consumed(self) -> int:
         return self.__node["EnergyReal_WAC_Sum_Consumed"]
 
     @property
-    def produced(self):
+    def produced(self) -> int:
         return self.__node["EnergyReal_WAC_Sum_Produced"]
 
 
 class AverageReadings:
+    def __init__(self, maxlen: int = 3) -> None:
+        self.__queue: collections.deque[float] = collections.deque(maxlen=maxlen)
 
-    def __init__(self, maxlen=3):
-        self.__queue = collections.deque(maxlen=maxlen)
-
-    def clear(self):
+    def clear(self) -> None:
         self.__queue.clear()
 
-    def append(self, value):
+    def append(self, value: float) -> None:
         self.__queue.append(value)
 
-    def average(self):
-        return statistics.mean(self.__queue) if self.__queue else 0
+    def average(self) -> float:
+        return statistics.mean(self.__queue) if self.__queue else 0.0
 
 
 class Fronius(WattPilotActor):
-
-    def __init__(self, config):
+    def __init__(self, config: configparser.ConfigParser) -> None:
         super().__init__()
 
         self.logger = logging.getLogger(__name__)
@@ -67,34 +71,34 @@ class Fronius(WattPilotActor):
         self.__host = config.get("main", "fronius_host")
         self.__url = f"http://{self.__host}/solar_api/v1/GetMeterRealtimeData.cgi?Scope=System"
 
-        self.__callback = None
-        self.__last_reading = None
+        self.__callback: Callback | None = None
+        self.__last_reading: EnergyReading | None = None
         self.__power = AverageReadings(maxlen=2)
 
-    def download(self):
+    def download(self) -> str:
         with urllib.request.urlopen(self.__url, timeout=5) as f:
             return f.read().decode("ascii")
 
     @staticmethod
-    def compute_power(reading1, reading2):
+    def compute_power(reading1: EnergyReading, reading2: EnergyReading) -> float:
         assert reading1.timestamp <= reading2.timestamp
         duration = reading2.timestamp - reading1.timestamp
         if duration == 0:
-            return 0
+            return 0.0
         consumed = reading2.consumed - reading1.consumed
         produced = reading2.produced - reading1.produced
         return (consumed - produced) * 3600 / duration
 
-    def register_callback(self, callback):
+    def register_callback(self, callback: Callback | None) -> None:
         self.logger.info("Register callback: %s", callback)
         self.__callback = callback
 
-    def run(self, delay=30):
+    def run(self, delay: float | int = 30) -> None:
         self.__last_reading = None
         self.__power.clear()
         self.run_internal(delay)
 
-    def run_internal(self, delay):
+    def run_internal(self, delay: float | int) -> None:
         try:
             reading = EnergyReading(json.loads(self.download()))
             self.logger.debug("Consumed: %dWh Produced: %dWh", reading.consumed, reading.produced)
@@ -112,7 +116,7 @@ class Fronius(WattPilotActor):
         finally:
             self.do_delay(delay, "run_internal", args=[delay])
 
-    def get_power(self):
+    def get_power(self) -> float:
         return self.__power.average()
 
 

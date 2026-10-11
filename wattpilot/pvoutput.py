@@ -15,20 +15,24 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+import configparser
 import logging
-import urllib
+import urllib.error
+import urllib.request
 from datetime import UTC, datetime
 
+import pykka
+
 from .actor import WattPilotActor
+from .temperature import Temperature
 
 
 class PVOutput(WattPilotActor):
-
-    def __init__(self, config, temperature):
+    def __init__(self, config: configparser.ConfigParser, temperature: pykka.ActorProxy[Temperature]) -> None:
         super().__init__()
         self.logger = logging.getLogger(__name__)
 
-        self.__temperature = temperature
+        self.__temperature: pykka.ActorProxy[Temperature] = temperature
 
         key = config.get("pvoutput", "key")
         sid = config.get("pvoutput", "sid")
@@ -37,7 +41,7 @@ class PVOutput(WattPilotActor):
         base_url = "https://pvoutput.org/service/r2/addstatus.jsp"
         self.__url = f"{base_url}?key={key}&sid={sid}&d={{date}}&t={{time}}&{field}={{temperature}}"
 
-    def send_temperature(self, temperature):
+    def send_temperature(self, temperature: float | int) -> None:
         now = datetime.now(tz=UTC)
         date = now.strftime("%Y%m%d")
         time = now.strftime("%H:%M")
@@ -48,10 +52,10 @@ class PVOutput(WattPilotActor):
             response = f.read(300)
             self.logger.debug(response)
 
-    def run(self, delay=300):
+    def run(self, delay: float | int = 300) -> None:
         self.run_internal(delay)
 
-    def run_internal(self, delay):
+    def run_internal(self, delay: float | int) -> None:
         try:
             temperature = self.__temperature.get_temperature().get()
             self.send_temperature(temperature)
@@ -62,5 +66,5 @@ class PVOutput(WattPilotActor):
         finally:
             self.do_delay(delay, "run_internal", args=[delay])
 
-    def get_temperature(self):
+    def get_temperature(self) -> pykka.ActorProxy[Temperature]:
         return self.__temperature

@@ -99,7 +99,6 @@ def wait_with_timeout(method, timeout=1):
 
 
 class FakeFuture:
-
     def __init__(self, value):
         self.value = value
 
@@ -123,7 +122,6 @@ class PowerFirstThen:
 
 
 class TestWattPilot:
-
     def test_idle_not_enough_power(self, mocker, wattpilot, power):
         power.get_power.return_value = FakeFuture(0)
         wattpilot.idle.defer()
@@ -137,8 +135,7 @@ class TestWattPilot:
         wattpilot.update_power().get()
         gpio.set_pin.assert_has_calls([mocker.call(1, True)])
 
-    def test_idle_enough_power_for_one_load_then_temperature_high(self, mocker, wattpilot, gpio,
-                                                                  power, temperature):
+    def test_idle_enough_power_for_one_load_then_temperature_high(self, mocker, wattpilot, gpio, power, temperature):
         power.get_power.return_value = FakeFuture(-2000)
         wattpilot.idle.defer()
         wattpilot.update_power().get()
@@ -247,8 +244,7 @@ class TestWattPilot:
             assert wattpilot.is_idle().get()
         assert gpio.set_pin.call_count == 0
 
-    def test_schedule_no_trigger_not_sunny_tomorrow(self, mocker, wattpilot, gpio, power, weather,
-                                                    temperature):
+    def test_schedule_no_trigger_not_sunny_tomorrow(self, mocker, wattpilot, gpio, power, weather, temperature):
         power.get_power.return_value = FakeFuture(0)
         temperature.get_temperature.return_value = FakeFuture(40)
         wattpilot.idle.defer()
@@ -259,8 +255,9 @@ class TestWattPilot:
             assert wattpilot.is_schedule().get()
         gpio.set_pin.assert_has_calls([mocker.call(1, True), mocker.call(2, True)])
 
-    def test_schedule_no_trigger_not_sunny_tomorrow_temperature_high(self, mocker, wattpilot, gpio,
-                                                                     power, weather, temperature):
+    def test_schedule_no_trigger_not_sunny_tomorrow_temperature_high(
+        self, mocker, wattpilot, gpio, power, weather, temperature
+    ):
         power.get_power.return_value = FakeFuture(0)
         wattpilot.idle.defer()
         wattpilot.set_schedule_trigger(False).get()

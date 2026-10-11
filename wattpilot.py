@@ -27,30 +27,30 @@ import flask_cors
 import pykka
 
 from wattpilot.app import WattPilotApp
-from wattpilot.device import GpioDevice, TempSensorDevice
+from wattpilot.device import Gpio, GpioDevice, TempSensorDevice
 from wattpilot.fronius import Fronius
 from wattpilot.openweathermap import OpenWeatherMap
 from wattpilot.pvoutput import PVOutput
-from wattpilot.temperature import Temperature
+from wattpilot.temperature import Sensor, Temperature
 from wattpilot.wattpilot import WattPilot
 
 
-def config():
+def config() -> configparser.ConfigParser:
     configuration = configparser.ConfigParser()
     configuration.read(["config.ini", "config.ini.local"])
     return configuration
 
 
-def setup_logging(log_config):
+def setup_logging(log_config: str) -> None:
     if os.path.isfile(log_config):
         logging.config.fileConfig(log_config, disable_existing_loggers=False)
 
 
-def handle_sigterm(*args):
+def handle_sigterm(*args: object) -> None:
     raise KeyboardInterrupt
 
 
-def main():
+def main() -> None:
     # Docker stop containers using SIGTERM
     signal.signal(signal.SIGTERM, handle_sigterm)
 
@@ -62,20 +62,23 @@ def main():
 
     configuration = config()
 
-    power = Fronius.start(configuration).proxy()
-    weather = OpenWeatherMap.start(configuration).proxy()
+    power: pykka.ActorProxy[Fronius] = Fronius.start(configuration).proxy()
+    weather: pykka.ActorProxy[OpenWeatherMap] = OpenWeatherMap.start(configuration).proxy()
 
+    gpio: Gpio
+    temperature_sensor: Sensor
     if args.fake_devices:
         gpio = unittest.mock.Mock()
-        temperature_sensor = unittest.mock.Mock()
-        temperature_sensor.value.return_value = 56.7
+        mock_sensor = unittest.mock.Mock()
+        mock_sensor.value.return_value = 56.7
+        temperature_sensor = mock_sensor
     else:
         gpio = GpioDevice()
         temperature_sensor = TempSensorDevice("boiler", configuration.get("temperature", "address"))
 
-    temperature = Temperature.start(configuration, temperature_sensor).proxy()
-    pvoutput = PVOutput.start(configuration, temperature).proxy()
-    wattpilot = WattPilot.start(configuration, power, gpio, weather, temperature).proxy()
+    temperature: pykka.ActorProxy[Temperature] = Temperature.start(configuration, temperature_sensor).proxy()
+    pvoutput: pykka.ActorProxy[PVOutput] = PVOutput.start(configuration, temperature).proxy()
+    wattpilot: pykka.ActorProxy[WattPilot] = WattPilot.start(configuration, power, gpio, weather, temperature).proxy()
 
     WattPilotApp.wattpilot = wattpilot
     WattPilotApp.openweathermap = weather

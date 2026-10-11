@@ -48,7 +48,6 @@ def temperature(mocker, config, temperature_sensor):
 
 
 class TestTemperature:
-
     @pytest.mark.parametrize("value", [0, 10, 22.2, 56.7, 100])
     def test_read_temperature(self, value, temperature, temperature_sensor):
         temperature_sensor.value.return_value = value
