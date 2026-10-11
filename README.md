@@ -18,7 +18,26 @@ In order to keep the cost low, we didn't want to continuously adjust the output 
 * The next scheduled period can be set manually to be triggered in any case.
 * A force mode allows the user to start/stop the heating manually at any time.
 
+## Running
+
+Install dependencies:
+
+```bash
+uv sync
+```
+
+Run in development mode with fake hardware devices:
+
+```bash
+uv run python wattpilot.py --fake-devices
+```
+
+Open <http://localhost:8080> in your browser (or <http://localhost/> via `docker compose up`, and <http://localhost:8088/> via `docker compose -f docker-compose.development.yml up`).
+
+The web interface is built with [NiceGUI](https://nicegui.io/) located in the `frontend/` directory. It is optimized for mobile and desktop, and supports multiple languages (English and French by default, configured via JSON files in `frontend/locales/`).
+
+Page-level authentication can be added by providing a custom `AuthPolicy` subclass to `FrontendApp`. It only gates the pages, not the static files or the websocket.
+
 ## Todos
 
-* User interface. There will be a simple web based interface to monitor, control and configure the system.
 * Temperature feedback. It would be useful to have the water boiler temperature as feedback. This could allow for a dynamic threshold (e.g. heat the water at higher temperature on solar) and also to stop the relays whenever the threshold has been reached. The system currently does not know if the heater is actually heating or not.
