@@ -1,7 +1,6 @@
 # Wattpilot
 
 [![Build Status](https://travis-ci.com/lostcontrol/wattpilot.svg?branch=master)](https://travis-ci.com/lostcontrol/wattpilot)
-[![codecov](https://codecov.io/gh/lostcontrol/wattpilot/branch/master/graph/badge.svg)](https://codecov.io/gh/lostcontrol/wattpilot)
 
 ## Introduction
 

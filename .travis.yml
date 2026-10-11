@@ -7,7 +7,4 @@ before_install:
   - docker-compose -f docker-compose.development.yml build
 
 script:
-  - ci_env=`bash <(curl -s https://codecov.io/env)`
-  - docker-compose -f docker-compose.development.yml run $ci_env development bash -c "
-    python -m pytest -v -s --cov=wattpilot --cov-report term test/ &&
-    bash <(curl -s https://codecov.io/bash)"
+  - docker-compose -f docker-compose.development.yml run development bash -c "python -m pytest -v -s --cov=wattpilot --cov-report term test/"
