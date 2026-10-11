@@ -1,6 +1,6 @@
 # Wattpilot
 
-[![Build Status](https://travis-ci.com/lostcontrol/wattpilot.svg?branch=master)](https://travis-ci.com/lostcontrol/wattpilot)
+[![CI](https://github.com/lostcontrol/wattpilot/actions/workflows/ci.yml/badge.svg)](https://github.com/lostcontrol/wattpilot/actions/workflows/ci.yml)
 
 ## Introduction
 

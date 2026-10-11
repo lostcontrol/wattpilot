@@ -1,0 +1,21 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build development image
+        run: docker compose -f docker-compose.development.yml build
+
+      - name: Check pre-commit
+        run: docker compose -f docker-compose.development.yml run --rm development pre-commit run --all-files
+
+      - name: Run pytest
+        run: docker compose -f docker-compose.development.yml run --rm development pytest -v -s --cov=wattpilot --cov-report term test/
