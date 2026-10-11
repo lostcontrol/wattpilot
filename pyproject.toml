@@ -11,8 +11,7 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: CPython",
 ]
 dependencies = [
-    "connexion[flask,swagger-ui,uvicorn]>=3.3.0",
-    "flask-cors>=6.0.5",
+    "nicegui>=3.0",
     "pykka>=4.5.0",
     "rpi-gpio>=0.7.1",
     "transitions>=0.9.3",
@@ -39,7 +38,7 @@ py-modules = ["wattpilot"]
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["wattpilot*"]
+include = ["wattpilot*", "frontend*"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]

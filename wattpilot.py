@@ -19,14 +19,14 @@ import argparse
 import configparser
 import logging.config
 import os
-import signal
+import threading
 import unittest.mock
 
-import connexion
-import flask_cors
 import pykka
 
-from wattpilot.app import WattPilotApp
+from frontend.app import FrontendApp
+from frontend.service import BackendService
+from frontend.store import SnapshotStore
 from wattpilot.device import Gpio, GpioDevice, TempSensorDevice
 from wattpilot.fronius import Fronius
 from wattpilot.openweathermap import OpenWeatherMap
@@ -46,14 +46,7 @@ def setup_logging(log_config: str) -> None:
         logging.config.fileConfig(log_config, disable_existing_loggers=False)
 
 
-def handle_sigterm(*args: object) -> None:
-    raise KeyboardInterrupt
-
-
 def main() -> None:
-    # Docker stop containers using SIGTERM
-    signal.signal(signal.SIGTERM, handle_sigterm)
-
     setup_logging("logging.conf")
 
     parser = argparse.ArgumentParser()
@@ -80,9 +73,13 @@ def main() -> None:
     pvoutput: pykka.ActorProxy[PVOutput] = PVOutput.start(configuration, temperature).proxy()
     wattpilot: pykka.ActorProxy[WattPilot] = WattPilot.start(configuration, power, gpio, weather, temperature).proxy()
 
-    WattPilotApp.wattpilot = wattpilot
-    WattPilotApp.openweathermap = weather
-    WattPilotApp.temperature = temperature
+    pin_to_name = {
+        configuration.getint(sec, "pin"): sec.removeprefix("load_")
+        for sec in configuration.sections()
+        if sec.startswith("load_") and configuration.has_option(sec, "pin")
+    }
+    service = BackendService(wattpilot, weather, temperature, load_names=pin_to_name)
+    store = SnapshotStore(service)
 
     # Wait for the first temperature to be read
     temperature.run().get()
@@ -90,17 +87,25 @@ def main() -> None:
 
     wattpilot.idle.defer()
 
-    app = connexion.FlaskApp(__name__, specification_dir="openapi/")
-    app.add_api("swagger.yaml")
+    cleaned_up = threading.Event()
 
-    flask_cors.CORS(app.app)
+    def cleanup() -> None:
+        # May be called from both the shutdown hook and the error path: run only once.
+        if cleaned_up.is_set():
+            return
+        cleaned_up.set()
+        try:
+            wattpilot.halt().get(timeout=10)
+        finally:
+            pykka.ActorRegistry.stop_all()
+            gpio.cleanup()
 
     try:
-        app.run(host="0.0.0.0", port=8080)
-    finally:
-        wattpilot.halt().get()
-        pykka.ActorRegistry.stop_all()
-        gpio.cleanup()
+        frontend_app = FrontendApp(store, cleanup)
+        frontend_app.run(host="0.0.0.0", port=8080)
+    except Exception:
+        cleanup()
+        raise
 
 
 if __name__ == "__main__":
