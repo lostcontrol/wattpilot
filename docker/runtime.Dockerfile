@@ -8,3 +8,5 @@ COPY . /code/
 RUN uv sync --frozen --no-dev
 
 ENV PATH="/code/.venv/bin:$PATH"
+
+EXPOSE 8080
