@@ -30,7 +30,8 @@
 				"ms-python.python",
 				"maptz.camelcasenavigation",
 				"42crunch.vscode-openapi",
-				"google.google-antigravity"
+				"google.google-antigravity",
+				"astral-sh.ty"
 			]
 		}
 	}
