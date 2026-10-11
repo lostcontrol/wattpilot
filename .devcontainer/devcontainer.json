@@ -21,7 +21,8 @@
 					120
 				],
 				"editor.formatOnSave": true,
-				"python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python"
+				"python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+				"terminal.integrated.defaultProfile.linux": "bash"
 			},
 			"extensions": [
 				"tamasfe.even-better-toml",
