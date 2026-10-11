@@ -1,0 +1,79 @@
+{
+  "app": {
+    "title": "Wattpilot"
+  },
+  "nav": {
+    "dashboard": "Tableau de bord",
+    "control": "Contrôle"
+  },
+  "status": {
+    "offline": "Système inaccessible - affichage des données en cache ou par défaut"
+  },
+  "state": {
+    "title": "État du système",
+    "connecting": "Connexion au système...",
+    "unknown": "État inconnu",
+    "halt": "Arrêté",
+    "idle": "En attente",
+    "force": "Forcé",
+    "schedule": "Programmé",
+    "solar": "Solaire",
+    "desc": {
+      "halt": "Tous les corps de chauffe sont désactivés",
+      "idle": "Surveillance du surplus solaire ou de la planification",
+      "force": "Tous les corps de chauffe sont actifs",
+      "schedule": "Chauffage sur le réseau électrique",
+      "solar": "Chauffage avec le surplus solaire"
+    }
+  },
+  "temp": {
+    "title": "Température du chauffe-eau",
+    "unit": "°C"
+  },
+  "loads": {
+    "title": "Corps de chauffe",
+    "active": "{count} actif(s)",
+    "active_of_total": "{active}/{total} actif(s)",
+    "empty": "Aucun corps de chauffe actif",
+    "element": "Corps de chauffe {id}"
+  },
+  "weather": {
+    "title": "Prévisions météo",
+    "cloudiness": "Couverture nuageuse",
+    "forecast_at": "Prévisions pour {time}",
+    "unavailable": "Données météo indisponibles",
+    "pending": "Vérification de la programmation en cours...",
+    "will_run": "Forte nébulosité : la programmation sera activée",
+    "will_not_run": "Beau temps : surplus solaire attendu"
+  },
+  "trigger": {
+    "title": "Déclencheur programmé",
+    "label": "Chauffer lors de la prochaine plage horaire",
+    "hint": "Active manuellement le chauffage lors de la prochaine fenêtre d'heures creuses configurée."
+  },
+  "control": {
+    "title": "Mode de fonctionnement",
+    "change_mode": "Changer de mode",
+    "desc": {
+      "main": "Sélectionnez un mode. Les transitions s'appliquent immédiatement.",
+      "halt": "Désactive tous les corps de chauffe",
+      "idle": "Surveillance du surplus solaire ou des heures creuses",
+      "force": "Active tous les corps de chauffe"
+    },
+    "halt": "Arrêter",
+    "idle": "Attente",
+    "force": "Forcer"
+  },
+  "dialog": {
+    "title": "Confirmer le changement d'état",
+    "prompt": "Basculer en mode {state} ?",
+    "force_warning": "Attention : tous les corps de chauffe seront immédiatement alimentés.",
+    "cancel": "Annuler",
+    "confirm": "Confirmer"
+  },
+  "notify": {
+    "success": "État changé en {state}",
+    "failed": "Impossible de changer d'état",
+    "error": "Le système ne répond pas"
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "app": {
+    "title": "Wattpilot"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "control": "Control"
+  },
+  "status": {
+    "offline": "Backend unreachable - displaying cached or placeholder data"
+  },
+  "state": {
+    "title": "System State",
+    "connecting": "Connecting to system...",
+    "unknown": "State unknown",
+    "halt": "Halted",
+    "idle": "Idle",
+    "force": "Forced",
+    "schedule": "Schedule",
+    "solar": "Solar",
+    "desc": {
+      "halt": "All heating elements are turned off",
+      "idle": "Watching for solar surplus or schedule",
+      "force": "All heating elements are on",
+      "schedule": "Heating from the grid",
+      "solar": "Heating with solar surplus"
+    }
+  },
+  "temp": {
+    "title": "Boiler Temperature",
+    "unit": "°C"
+  },
+  "loads": {
+    "title": "Heating Elements",
+    "active": "{count} active",
+    "active_of_total": "{active}/{total} active",
+    "empty": "No heating elements active",
+    "element": "Heating element {id}"
+  },
+  "weather": {
+    "title": "Weather Forecast",
+    "cloudiness": "Cloud cover",
+    "forecast_at": "Forecast for {time}",
+    "unavailable": "Weather data unavailable",
+    "pending": "Schedule check pending...",
+    "will_run": "High cloudiness: schedule will be triggered",
+    "will_not_run": "Good weather: solar surplus expected"
+  },
+  "trigger": {
+    "title": "Schedule Trigger",
+    "label": "Heat at the next scheduled slot",
+    "hint": "Manually enables heating during the next configured night/off-peak window."
+  },
+  "control": {
+    "title": "System Mode",
+    "change_mode": "Change Mode",
+    "desc": {
+      "main": "Select an operating mode. Transitions take effect immediately.",
+      "halt": "Turns off all heating elements",
+      "idle": "Automatic monitoring for solar surplus or schedule",
+      "force": "Turns on all heating elements"
+    },
+    "halt": "Halt",
+    "idle": "Idle",
+    "force": "Force"
+  },
+  "dialog": {
+    "title": "Confirm State Change",
+    "prompt": "Switch to {state} mode?",
+    "force_warning": "Warning: this will immediately energize all heating elements.",
+    "cancel": "Cancel",
+    "confirm": "Confirm"
+  },
+  "notify": {
+    "success": "State changed to {state}",
+    "failed": "Unable to change state",
+    "error": "Backend not responding"
+  }
+}

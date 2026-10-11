@@ -1,0 +1,667 @@
+:root {
+  --wp-bg-a: #eef2ff;
+  --wp-bg-b: #f8fafc;
+  --wp-card-bg: rgba(255, 255, 255, 0.75);
+  --wp-header-bg: rgba(255, 255, 255, 0.85);
+  --wp-nav-bg: rgba(255, 255, 255, 0.9);
+  --wp-border: rgba(15, 23, 42, 0.08);
+  --wp-text: #0f172a;
+  --wp-text-muted: #64748b;
+  --wp-chip-bg: #eef2ff;
+  --wp-chip-border: #c7d2fe;
+  --wp-radius: 24px;
+  --wp-radius-sm: 12px;
+
+  /* State colors */
+  --wp-halt: #94a3b8;
+  --wp-idle: #3b82f6;
+  --wp-force: #f97316;
+  --wp-schedule: #8b5cf6;
+  --wp-solar: #22c55e;
+  --wp-glow: transparent;
+
+  /* Weather cloud styling */
+  --wp-cloud-bar: #64748b;
+  --wp-cloud-track: #e2e8f0;
+  --wp-cloud-icon: #64748b;
+}
+
+.body--dark {
+  --wp-bg-a: #0b1020;
+  --wp-bg-b: #111827;
+  --wp-card-bg: rgba(30, 41, 59, 0.7);
+  --wp-header-bg: rgba(15, 23, 42, 0.85);
+  --wp-nav-bg: rgba(30, 41, 59, 0.9);
+  --wp-border: rgba(255, 255, 255, 0.08);
+  --wp-text: #e2e8f0;
+  --wp-text-muted: #94a3b8;
+  --wp-chip-bg: #1e293b;
+  --wp-chip-border: #334155;
+
+  /* Weather cloud styling dark */
+  --wp-cloud-bar: #94a3b8;
+  --wp-cloud-track: #334155;
+  --wp-cloud-icon: #94a3b8;
+}
+
+/* Global body styling */
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--wp-text);
+  background: linear-gradient(160deg, var(--wp-bg-a), var(--wp-bg-b)) fixed;
+  min-height: 100vh;
+  margin: 0;
+}
+
+/* Layout containers */
+.wp-header {
+  background: var(--wp-header-bg) !important;
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--wp-border) !important;
+  color: var(--wp-text) !important;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.wp-brand-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.wp-header-left,
+.wp-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.wp-lang-switcher {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.wp-container {
+  width: 100%;
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 16px 16px 110px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+@media (min-width: 768px) {
+  .wp-container {
+    max-width: 800px;
+    padding-bottom: 32px;
+  }
+}
+
+.wp-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .wp-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Card base */
+.wp-card {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  background: var(--wp-card-bg) !important;
+  border: 1px solid var(--wp-border) !important;
+  border-radius: var(--wp-radius) !important;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.06) !important;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.wp-card-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.wp-card-header-icon {
+  font-size: 1.25rem;
+  color: var(--wp-text-muted);
+}
+
+.wp-hero-span {
+  grid-column: 1 / -1 !important;
+  width: 100% !important;
+}
+
+/* Typography helpers */
+.wp-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--wp-text-muted);
+  font-weight: 600;
+}
+
+.wp-value {
+  font-size: 2.25rem;
+  font-weight: 300;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.wp-subtext {
+  font-size: 0.85rem;
+  color: var(--wp-text-muted);
+}
+
+/* Offline banner */
+.wp-offline-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: var(--wp-radius-sm);
+  background-color: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #b45309;
+  font-size: 0.875rem;
+}
+
+.body--dark .wp-offline-banner {
+  color: #fcd34d;
+}
+
+/* State hero tile */
+.wp-hero {
+  box-shadow: 0 0 0 1px var(--wp-border), 0 10px 40px var(--wp-glow, transparent) !important;
+}
+
+.wp-hero-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  gap: 16px;
+}
+
+.wp-hero-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 0%;
+  min-width: 0;
+}
+
+.wp-hero--halt { --wp-glow: var(--wp-halt); }
+.wp-hero--halt .wp-icon-circle { background-color: var(--wp-halt); }
+
+.wp-hero--idle { --wp-glow: var(--wp-idle); }
+.wp-hero--idle .wp-icon-circle { background-color: var(--wp-idle); }
+
+.wp-hero--force { --wp-glow: var(--wp-force); }
+.wp-hero--force .wp-icon-circle { background-color: var(--wp-force); }
+
+.wp-hero--schedule { --wp-glow: var(--wp-schedule); }
+.wp-hero--schedule .wp-icon-circle { background-color: var(--wp-schedule); }
+
+.wp-hero--solar { --wp-glow: var(--wp-solar); }
+.wp-hero--solar .wp-icon-circle { background-color: var(--wp-solar); }
+
+.wp-hero--unknown { --wp-glow: transparent; }
+.wp-hero--unknown .wp-icon-circle { background-color: var(--wp-halt); }
+
+.wp-icon-circle {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  transition: background-color 0.3s ease;
+}
+
+/* Temperature gauge */
+.wp-gauge-card {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.wp-gauge-row {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin: 8px 0;
+}
+
+.wp-gauge-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+}
+
+.wp-gauge-unit {
+  font-size: 0.8rem;
+  color: var(--wp-text-muted);
+  font-weight: 500;
+}
+
+/* Heating elements increasing bars */
+.wp-bars-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.wp-bars-container {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 20px;
+  height: 110px;
+  margin-top: 20px;
+  margin-bottom: 8px;
+  padding: 4px 0;
+  width: 100%;
+}
+
+.wp-bar-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: default;
+}
+
+.wp-bar-track {
+  width: 48px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.05);
+  border: 1px solid var(--wp-border);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+  box-sizing: border-box;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.body--dark .wp-bar-track {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.wp-bar-fill {
+  width: 100%;
+  height: 0%;
+  border-radius: 10px;
+  transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.wp-bar-track.is-active .wp-bar-fill {
+  height: 100%;
+}
+
+/* Stage 1: Green */
+.wp-bar-track-1 {
+  height: 40px;
+}
+
+.wp-bar-track-1.is-active {
+  border-color: rgba(34, 197, 94, 0.6);
+  box-shadow: 0 0 16px rgba(34, 197, 94, 0.25);
+}
+
+.wp-bar-fill-1 {
+  background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%);
+}
+
+.body--dark .wp-bar-fill-1 {
+  background: linear-gradient(180deg, #4ade80 0%, #22c55e 100%);
+}
+
+.wp-bar-col-1.is-active .wp-bar-label {
+  color: #16a34a;
+  font-weight: 700;
+}
+
+.body--dark .wp-bar-col-1.is-active .wp-bar-label {
+  color: #4ade80;
+}
+
+/* Stage 2: Orange */
+.wp-bar-track-2 {
+  height: 68px;
+}
+
+.wp-bar-track-2.is-active {
+  border-color: rgba(249, 115, 22, 0.6);
+  box-shadow: 0 0 16px rgba(249, 115, 22, 0.25);
+}
+
+.wp-bar-fill-2 {
+  background: linear-gradient(180deg, #f97316 0%, #ea580c 100%);
+}
+
+.body--dark .wp-bar-fill-2 {
+  background: linear-gradient(180deg, #fb923c 0%, #f97316 100%);
+}
+
+.wp-bar-col-2.is-active .wp-bar-label {
+  color: #ea580c;
+  font-weight: 700;
+}
+
+.body--dark .wp-bar-col-2.is-active .wp-bar-label {
+  color: #fb923c;
+}
+
+/* Stage 3: Red */
+.wp-bar-track-3 {
+  height: 96px;
+}
+.wp-bar-track-3.is-active {
+  border-color: rgba(239, 68, 68, 0.6);
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.25);
+}
+
+.wp-bar-fill-3 {
+  background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+}
+
+.body--dark .wp-bar-fill-3 {
+  background: linear-gradient(180deg, #f87171 0%, #ef4444 100%);
+}
+
+.wp-bar-col-3.is-active .wp-bar-label {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.body--dark .wp-bar-col-3.is-active .wp-bar-label {
+  color: #f87171;
+}
+
+.wp-bar-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--wp-text-muted);
+  transition: color 0.3s ease;
+}
+
+/* Load chips fallback */
+.wp-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+}
+
+.wp-load-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--wp-chip-bg);
+  border: 1px solid var(--wp-chip-border);
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.wp-dot-pulse {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #22c55e;
+  animation: wp-pulse 1.6s ease-in-out infinite;
+}
+
+/* Weather tile */
+.wp-weather-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.wp-weather-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.wp-cloud-icon {
+  color: var(--wp-cloud-icon) !important;
+}
+
+.wp-cloud-progress {
+  height: 8px !important;
+  border-radius: 999px !important;
+  background: var(--wp-cloud-track) !important;
+  overflow: hidden;
+}
+
+.wp-cloud-progress .q-linear-progress__track {
+  background: var(--wp-cloud-track) !important;
+  opacity: 1 !important;
+}
+
+.wp-cloud-progress .q-linear-progress__model {
+  background: var(--wp-cloud-bar) !important;
+  border-radius: 999px !important;
+  transition: width 0.3s ease;
+}
+
+.wp-weather-forecast-badge {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.wp-weather-forecast-badge.is-run,
+.wp-weather-forecast-run {
+  color: #4f46e5;
+}
+
+.body--dark .wp-weather-forecast-badge.is-run,
+.body--dark .wp-weather-forecast-run {
+  color: #818cf8;
+}
+
+.wp-weather-forecast-badge.is-solar,
+.wp-weather-forecast-solar {
+  color: #16a34a;
+}
+
+.body--dark .wp-weather-forecast-badge.is-solar,
+.body--dark .wp-weather-forecast-solar {
+  color: #4ade80;
+}
+
+/* Floating bottom navigation for mobile */
+.wp-nav {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  background: var(--wp-nav-bg) !important;
+  border: 1px solid var(--wp-border) !important;
+  border-radius: 14px !important;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12) !important;
+  z-index: 2000;
+  padding: 6px 8px;
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  white-space: nowrap !important;
+  gap: 6px !important;
+}
+
+.wp-nav-button {
+  border-radius: 10px !important;
+  padding: 6px 14px !important;
+  white-space: nowrap !important;
+  font-weight: 500 !important;
+  font-size: 0.85rem !important;
+  text-transform: none !important;
+}
+
+@media (min-width: 768px) {
+  .wp-nav {
+    display: none !important;
+  }
+}
+
+.wp-nav-desktop {
+  display: none;
+  align-items: center;
+  gap: 4px;
+}
+
+@media (min-width: 768px) {
+  .wp-nav-desktop {
+    display: flex;
+  }
+}
+
+/* Control page mode buttons */
+.wp-mode-button {
+  width: 100%;
+  border-radius: var(--wp-radius-sm);
+  padding: 12px;
+  font-weight: 500;
+  text-transform: none;
+  font-size: 1rem;
+}
+
+.wp-dialog-card {
+  max-width: 400px;
+  width: 90vw;
+  padding: 24px;
+  border-radius: var(--wp-radius) !important;
+}
+
+/* Schedule trigger styles */
+.wp-trigger-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  gap: 12px;
+}
+
+.wp-trigger-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 0%;
+  min-width: 0;
+}
+
+.wp-trigger-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.375;
+}
+
+.wp-trigger-hint {
+  font-size: 0.75rem;
+  color: var(--wp-text-muted);
+  line-height: 1.5;
+}
+
+/* Control page mode button internals */
+.wp-mode-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  gap: 8px;
+}
+
+.wp-mode-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1 1 0%;
+  min-width: 0;
+}
+
+.wp-mode-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  flex: 1 1 0%;
+  min-width: 0;
+}
+
+.wp-mode-title {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.wp-mode-desc {
+  font-size: 0.75rem;
+  opacity: 0.9;
+  text-align: left;
+  line-height: 1.5;
+}
+
+.wp-mode-arrow {
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+/* Confirmation dialog internals */
+.wp-dialog-msg {
+  font-size: 0.875rem;
+  color: var(--wp-text-muted);
+}
+
+.wp-dialog-warn {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #d97706;
+}
+
+.body--dark .wp-dialog-warn {
+  color: #fbbf24;
+}
+
+/* Keyframes */
+@keyframes wp-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.9); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
