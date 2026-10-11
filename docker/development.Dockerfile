@@ -1,4 +1,7 @@
-FROM python:3.12
+FROM python:3.14-trixie
+
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 # Create a non-root user.
 ARG USERNAME=me
@@ -13,10 +16,9 @@ RUN groupadd --gid $USER_GID $USERNAME && \
     chown ${USER_UID}:${USER_GID} /home/$USERNAME/.vscode-server*
 
 WORKDIR /code
-COPY requirements*.txt /code/
-RUN pip install --no-cache-dir -r requirements-dev.txt
 COPY . /code/
-RUN chown -R $USERNAME /code
+RUN uv sync --frozen && chown -R $USERNAME /code
 
 USER $USERNAME
 ENV HOME=/home/$USERNAME
+ENV PATH="/code/.venv/bin:$PATH"

@@ -1,6 +1,10 @@
-FROM python:3.12
+FROM python:3.14-trixie
+
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 WORKDIR /code
-COPY requirements.txt /code/
-RUN pip install --no-cache-dir -r requirements.txt
 COPY . /code/
+RUN uv sync --frozen --no-dev
+
+ENV PATH="/code/.venv/bin:$PATH"
