@@ -134,7 +134,10 @@ class WattPilot(WattPilotActor):
                 "solar",
             ],
             "force",
+            after=self.after_force,
         )
+        self.__machine.add_transition("force", "force", None, after=self.after_force)
+        self.__machine.add_transition("update_force", "force", None, after=self.after_force)
         self.__machine.add_transition("schedule", "idle", "schedule", after=self.after_schedule)
         self.__machine.add_transition("schedule", "schedule", None, after=self.after_schedule)
         self.__machine.add_transition("solar", "idle", "solar")
@@ -154,6 +157,7 @@ class WattPilot(WattPilotActor):
         self.__cloudiness_level: int = config.getint("main", "cloudiness_level")
         self.__temperature_schedule: int = config.getint("temperature", "temperature_schedule")
         self.__temperature_solar: int = config.getint("temperature", "temperature_solar")
+        self.__temperature_force: int = config.getint("temperature", "temperature_force")
 
     def get_active_loads(self) -> list[Load]:
         return copy.deepcopy(self.__active_loads)
@@ -238,7 +242,19 @@ class WattPilot(WattPilotActor):
 
     def on_enter_force(self) -> None:
         self.logger.info("Entering force state")
-        self.__start_all_inactive()
+        if not self.check_temperature_max(self.__temperature_force):
+            self.__start_all_inactive()
+
+    def after_force(self) -> None:
+        if self.check_temperature_max(self.__temperature_force):
+            if self.__active_loads:
+                self.logger.info("Force: temperature limit reached, stopping loads")
+                self.__stop_all_active()
+        elif self.check_temperature_min(self.__temperature_force):
+            if self.__loads.get_inactive_loads(self.__active_loads):
+                self.logger.info("Force: temperature below threshold, starting all loads")
+                self.__start_all_inactive()
+        self.do_delay(self.DEFAULT_DELAY, "update_force")
 
     def on_enter_solar(self) -> None:
         self.logger.info("Entering solar state")

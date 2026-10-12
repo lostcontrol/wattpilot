@@ -64,6 +64,7 @@ def config():
         [temperature]
         temperature_schedule = 50
         temperature_solar = 60
+        temperature_force = 55
 
         [load_1]
         power = 1000
@@ -196,6 +197,52 @@ class TestWattPilot:
         wattpilot.force.defer()
         assert wattpilot.is_force().get()
         gpio.set_pin.assert_has_calls([mocker.call(1, True), mocker.call(2, True)])
+
+    def test_force_temperature_high_on_enter(self, mocker, wattpilot, gpio, power, temperature):
+        power.get_power.return_value = FakeFuture(0)
+        temperature.get_temperature.return_value = FakeFuture(56)
+        wattpilot.idle.defer()
+        wattpilot.force.defer()
+        assert wattpilot.is_force().get()
+        assert gpio.set_pin.call_count == 0
+        assert len(wattpilot.get_active_loads().get()) == 0
+
+    def test_force_temperature_stops_and_reactivates(self, mocker, wattpilot, gpio, power, temperature):
+        power.get_power.return_value = FakeFuture(0)
+        temperature.get_temperature.return_value = FakeFuture(50)
+        wattpilot.idle.defer()
+        wattpilot.force.defer()
+        assert wattpilot.is_force().get()
+        gpio.set_pin.assert_has_calls([mocker.call(1, True), mocker.call(2, True)])
+        assert len(wattpilot.get_active_loads().get()) == 2
+
+        # Temperature rises above 55 + 0.5 (55.5) -> all loads are stopped
+        gpio.set_pin.reset_mock()
+        temperature.get_temperature.return_value = FakeFuture(56)
+        wait_with_timeout(lambda: len(wattpilot.get_active_loads().get()) == 0)
+        assert wattpilot.is_force().get()
+        gpio.set_pin.assert_has_calls([mocker.call(1, False), mocker.call(2, False)])
+
+        # Temperature drops into hysteresis band (54.5, between 54 and 55.5) -> loads remain stopped
+        gpio.set_pin.reset_mock()
+        temperature.get_temperature.return_value = FakeFuture(54.5)
+        time.sleep(0.05)
+        assert len(wattpilot.get_active_loads().get()) == 0
+        assert gpio.set_pin.call_count == 0
+
+        # Temperature drops below 55 - 1.0 (54.0) -> all loads reactivated
+        gpio.set_pin.reset_mock()
+        temperature.get_temperature.return_value = FakeFuture(53.9)
+        wait_with_timeout(lambda: len(wattpilot.get_active_loads().get()) == 2)
+        assert wattpilot.is_force().get()
+        gpio.set_pin.assert_has_calls([mocker.call(1, True), mocker.call(2, True)])
+
+        # Temperature rises back into hysteresis band (54.5) -> loads remain active
+        gpio.set_pin.reset_mock()
+        temperature.get_temperature.return_value = FakeFuture(54.5)
+        time.sleep(0.05)
+        assert len(wattpilot.get_active_loads().get()) == 2
+        assert gpio.set_pin.call_count == 0
 
     def test_schedule_no_trigger(self, mocker, wattpilot, gpio, power, weather):
         power.get_power.return_value = FakeFuture(0)
