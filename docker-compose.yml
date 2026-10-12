@@ -2,9 +2,15 @@ services:
     wattpilot:
         environment:
             - TZ=Europe/Zurich
+            - WATTPILOT_SETTINGS=/data/config.ini.settings
         build:
             context: .
             dockerfile: docker/runtime.Dockerfile
         command: python wattpilot.py --fake-devices
+        volumes:
+            - wattpilot-data:/data
         ports:
             - 80:8080
+
+volumes:
+    wattpilot-data:

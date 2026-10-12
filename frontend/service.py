@@ -25,6 +25,7 @@ from datetime import UTC, datetime
 import pykka
 
 from wattpilot.openweathermap import OpenWeatherMap
+from wattpilot.settings import SettingsFile
 from wattpilot.temperature import Temperature
 from wattpilot.wattpilot import WattPilot
 
@@ -43,6 +44,11 @@ class Snapshot:
     cloudiness: int | None = None
     forecast_time: datetime | None = None
     will_run: bool = False
+    temperature_schedule: float | None = None
+    temperature_solar: float | None = None
+    temperature_force: float | None = None
+    schedule_start: int | None = None
+    schedule_stop: int | None = None
 
 
 class BackendService:
@@ -54,11 +60,13 @@ class BackendService:
         weather: pykka.ActorProxy[OpenWeatherMap],
         temperature: pykka.ActorProxy[Temperature],
         load_names: dict[int, str] | None = None,
+        settings_file: SettingsFile | None = None,
     ) -> None:
         self.__wattpilot = wattpilot
         self.__weather = weather
         self.__temperature = temperature
         self.__load_names = load_names or {}
+        self.__settings_file = settings_file or SettingsFile()
         self.__logger = logging.getLogger(__name__)
         self.__failing = False
 
@@ -79,6 +87,23 @@ class BackendService:
     async def set_schedule_trigger(self, value: bool) -> None:
         await asyncio.to_thread(self.__apply_trigger, value)
 
+    async def set_settings(
+        self,
+        temperature_schedule: float,
+        temperature_solar: float,
+        temperature_force: float,
+        schedule_start: int,
+        schedule_stop: int,
+    ) -> bool:
+        return await asyncio.to_thread(
+            self.__apply_settings,
+            temperature_schedule,
+            temperature_solar,
+            temperature_force,
+            schedule_start,
+            schedule_stop,
+        )
+
     def __read_snapshot(self) -> Snapshot:
         # Request all actor operations up front to obtain their Futures concurrently.
         forecast = self.__weather.get_forecast()
@@ -87,12 +112,15 @@ class BackendService:
         loads = self.__wattpilot.get_active_loads()
         trigger = self.__wattpilot.get_schedule_trigger()
         will_run = self.__wattpilot.get_scheduled_by_weather()
+        settings_future = self.__wattpilot.get_settings()
 
         # Collect results with timeouts so blocked actors do not hang the worker thread.
         timestamp, cloudiness = forecast.get(timeout=FUTURE_TIMEOUT)
         active_pins = [load.pin for load in loads.get(timeout=FUTURE_TIMEOUT)]
         active_names = [self.__load_names.get(pin, str(pin)) for pin in active_pins]
         all_configured = sorted(set(self.__load_names.values()))
+        settings = settings_future.get(timeout=FUTURE_TIMEOUT)
+
         return Snapshot(
             ok=True,
             state=state.get(timeout=FUTURE_TIMEOUT),
@@ -103,6 +131,11 @@ class BackendService:
             cloudiness=cloudiness,
             forecast_time=datetime.fromtimestamp(timestamp, tz=UTC) if timestamp else None,
             will_run=will_run.get(timeout=FUTURE_TIMEOUT),
+            temperature_schedule=settings.get("temperature_schedule"),
+            temperature_solar=settings.get("temperature_solar"),
+            temperature_force=settings.get("temperature_force"),
+            schedule_start=settings.get("schedule_start"),
+            schedule_stop=settings.get("schedule_stop"),
         )
 
     def __apply_trigger(self, value: bool) -> None:
@@ -114,3 +147,30 @@ class BackendService:
             raise ValueError(state)
         future = getattr(self.__wattpilot, state)()
         return bool(future.get(timeout=FUTURE_TIMEOUT))
+
+    def __apply_settings(
+        self,
+        temperature_schedule: float,
+        temperature_solar: float,
+        temperature_force: float,
+        schedule_start: int,
+        schedule_stop: int,
+    ) -> bool:
+        self.__wattpilot.set_settings(
+            temperature_schedule=temperature_schedule,
+            temperature_solar=temperature_solar,
+            temperature_force=temperature_force,
+            schedule_start=schedule_start,
+            schedule_stop=schedule_stop,
+        ).get(timeout=FUTURE_TIMEOUT)
+        if self.__settings_file:
+            self.__settings_file.save(
+                {
+                    "temperature_schedule": temperature_schedule,
+                    "temperature_solar": temperature_solar,
+                    "temperature_force": temperature_force,
+                    "schedule_start": schedule_start,
+                    "schedule_stop": schedule_stop,
+                }
+            )
+        return True

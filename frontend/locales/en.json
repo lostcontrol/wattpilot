@@ -71,9 +71,33 @@
     "cancel": "Cancel",
     "confirm": "Confirm"
   },
+  "settings": {
+    "title": "Settings",
+    "desc": "Configure boiler temperature thresholds and scheduled off-peak period.",
+    "temperatures": "Temperatures",
+    "temp_schedule": "Schedule temperature",
+    "temp_schedule_desc": "Target temperature during scheduled heating",
+    "temp_solar": "Solar temperature",
+    "temp_solar_desc": "Target temperature when heating with solar surplus",
+    "temp_force": "Force temperature",
+    "temp_force_desc": "Target temperature in forced heating mode",
+    "period": "Schedule Period",
+    "period_desc": "Off-peak hours for scheduled heating",
+    "start": "Start time",
+    "start_desc": "Beginning of the scheduled heating window",
+    "stop": "End time",
+    "stop_desc": "End of the scheduled heating window",
+    "duration": "{start}:00 → {stop}:00 ({duration} h)",
+    "equal_hours_error": "Start and end times cannot be equal",
+    "save": "Save Settings",
+    "saving": "Saving...",
+    "now_indicator": "Now: {time}"
+  },
   "notify": {
     "success": "State changed to {state}",
     "failed": "Unable to change state",
-    "error": "Backend not responding"
+    "error": "Backend not responding",
+    "settings_saved": "Settings saved successfully",
+    "settings_failed": "Unable to save settings"
   }
 }

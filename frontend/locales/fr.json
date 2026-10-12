@@ -71,9 +71,33 @@
     "cancel": "Annuler",
     "confirm": "Confirmer"
   },
+  "settings": {
+    "title": "Paramètres",
+    "desc": "Configuration des seuils de température et de la période programmée.",
+    "temperatures": "Températures",
+    "temp_schedule": "Température planifiée",
+    "temp_schedule_desc": "Température cible pendant les heures creuses",
+    "temp_solar": "Température solaire",
+    "temp_solar_desc": "Température cible avec surplus solaire",
+    "temp_force": "Température forcée",
+    "temp_force_desc": "Température cible en mode forcé",
+    "period": "Période planifiée",
+    "period_desc": "Heures creuses pour la chauffe programmée",
+    "start": "Heure de début",
+    "start_desc": "Début de la plage de chauffe programmée",
+    "stop": "Heure de fin",
+    "stop_desc": "Fin de la plage de chauffe programmée",
+    "duration": "{start}:00 → {stop}:00 ({duration} h)",
+    "equal_hours_error": "L'heure de début et de fin ne peuvent pas être identiques",
+    "save": "Enregistrer les paramètres",
+    "saving": "Enregistrement...",
+    "now_indicator": "Actuel : {time}"
+  },
   "notify": {
     "success": "État changé en {state}",
     "failed": "Impossible de changer d'état",
-    "error": "Le système ne répond pas"
+    "error": "Le système ne répond pas",
+    "settings_saved": "Paramètres enregistrés avec succès",
+    "settings_failed": "Impossible d'enregistrer les paramètres"
   }
 }

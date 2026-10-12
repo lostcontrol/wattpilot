@@ -31,13 +31,15 @@ from wattpilot.device import Gpio, GpioDevice, TempSensorDevice
 from wattpilot.fronius import Fronius
 from wattpilot.openweathermap import OpenWeatherMap
 from wattpilot.pvoutput import PVOutput
+from wattpilot.settings import DEFAULT_SETTINGS_FILE, SettingsFile
 from wattpilot.temperature import Sensor, Temperature
 from wattpilot.wattpilot import WattPilot
 
 
-def config() -> configparser.ConfigParser:
+def config(settings_path: str | None = None) -> configparser.ConfigParser:
     configuration = configparser.ConfigParser()
-    configuration.read(["config.ini", "config.ini.local"])
+    path = settings_path or os.environ.get("WATTPILOT_SETTINGS", DEFAULT_SETTINGS_FILE)
+    configuration.read(["config.ini", "config.ini.local", path])
     return configuration
 
 
@@ -53,7 +55,8 @@ def main() -> None:
     parser.add_argument("--fake-devices", action="store_true", help="fake the underlying hardware")
     args = parser.parse_args()
 
-    configuration = config()
+    settings_file = SettingsFile()
+    configuration = config(str(settings_file.path))
 
     power: pykka.ActorProxy[Fronius] = Fronius.start(configuration).proxy()
     weather: pykka.ActorProxy[OpenWeatherMap] = OpenWeatherMap.start(configuration).proxy()
@@ -78,7 +81,13 @@ def main() -> None:
         for sec in configuration.sections()
         if sec.startswith("load_") and configuration.has_option(sec, "pin")
     }
-    service = BackendService(wattpilot, weather, temperature, load_names=pin_to_name)
+    service = BackendService(
+        wattpilot,
+        weather,
+        temperature,
+        load_names=pin_to_name,
+        settings_file=settings_file,
+    )
     store = SnapshotStore(service)
 
     # Wait for the first temperature to be read

@@ -1,6 +1,7 @@
 __pycache__
 .coverage
 *.local
+*.settings
 .venv/
 .pytest_cache/
 .ruff_cache/

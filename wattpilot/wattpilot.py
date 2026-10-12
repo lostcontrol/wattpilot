@@ -18,7 +18,7 @@
 import configparser
 import copy
 import logging
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import Final
 
 import pykka
@@ -27,6 +27,7 @@ from .actor import WattPilotActor, WattPilotModel
 from .device import Gpio
 from .fronius import Fronius
 from .openweathermap import OpenWeatherMap
+from .settings import in_schedule_window, validate_settings
 from .temperature import Temperature
 
 
@@ -155,9 +156,50 @@ class WattPilot(WattPilotActor):
         self.__schedule_start: int = config.getint("main", "schedule_start")
         self.__schedule_stop: int = config.getint("main", "schedule_stop")
         self.__cloudiness_level: int = config.getint("main", "cloudiness_level")
-        self.__temperature_schedule: int = config.getint("temperature", "temperature_schedule")
-        self.__temperature_solar: int = config.getint("temperature", "temperature_solar")
-        self.__temperature_force: int = config.getint("temperature", "temperature_force")
+        self.__temperature_schedule: float = config.getfloat("temperature", "temperature_schedule")
+        self.__temperature_solar: float = config.getfloat("temperature", "temperature_solar")
+        self.__temperature_force: float = config.getfloat("temperature", "temperature_force")
+
+    def __get_now(self) -> datetime:
+        return datetime.now().astimezone()
+
+    def get_settings(self) -> dict[str, float | int]:
+        return {
+            "temperature_schedule": self.__temperature_schedule,
+            "temperature_solar": self.__temperature_solar,
+            "temperature_force": self.__temperature_force,
+            "schedule_start": self.__schedule_start,
+            "schedule_stop": self.__schedule_stop,
+        }
+
+    def set_settings(
+        self,
+        temperature_schedule: float | int,
+        temperature_solar: float | int,
+        temperature_force: float | int,
+        schedule_start: int,
+        schedule_stop: int,
+    ) -> None:
+        validate_settings(
+            temperature_schedule=temperature_schedule,
+            temperature_solar=temperature_solar,
+            temperature_force=temperature_force,
+            schedule_start=schedule_start,
+            schedule_stop=schedule_stop,
+        )
+        self.logger.info(
+            "Updating settings: schedule=%.1f°C, solar=%.1f°C, force=%.1f°C, period=%d..%d",
+            temperature_schedule,
+            temperature_solar,
+            temperature_force,
+            schedule_start,
+            schedule_stop,
+        )
+        self.__temperature_schedule = float(temperature_schedule)
+        self.__temperature_solar = float(temperature_solar)
+        self.__temperature_force = float(temperature_force)
+        self.__schedule_start = int(schedule_start)
+        self.__schedule_stop = int(schedule_stop)
 
     def get_active_loads(self) -> list[Load]:
         return copy.deepcopy(self.__active_loads)
@@ -209,7 +251,7 @@ class WattPilot(WattPilotActor):
         if minimum_power + self.__hysteresis_to_grid <= -self.__power.get_power().get():
             if self.check_temperature_min(self.__temperature_solar):
                 self.do_delay(0, "solar")
-        elif self.__schedule_start <= datetime.now(tz=UTC).hour < self.__schedule_stop:
+        elif in_schedule_window(self.__get_now().hour, self.__schedule_start, self.__schedule_stop):
             if self.__schedule_trigger or self.get_scheduled_by_weather():
                 if self.check_temperature_min(self.__temperature_schedule):
                     self.do_delay(0, "schedule")
@@ -233,7 +275,7 @@ class WattPilot(WattPilotActor):
         self.__start_all_inactive()
 
     def after_schedule(self) -> None:
-        if datetime.now(tz=UTC).hour >= self.__schedule_stop:
+        if not in_schedule_window(self.__get_now().hour, self.__schedule_start, self.__schedule_stop):
             self.do_delay(0, "idle")
         elif self.check_temperature_max(self.__temperature_schedule):
             self.do_delay(0, "idle")

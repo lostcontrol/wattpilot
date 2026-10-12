@@ -312,3 +312,63 @@ class TestWattPilot:
         with freeze_time("1981-05-30 02:00:01", tick=True):
             wattpilot.update_power().get()
             assert wattpilot.is_idle().get()
+
+    def test_get_and_set_settings(self, wattpilot):
+        settings = wattpilot.get_settings().get()
+        assert settings["temperature_schedule"] == 50.0
+        assert settings["temperature_solar"] == 60.0
+        assert settings["temperature_force"] == 55.0
+        assert settings["schedule_start"] == 2
+        assert settings["schedule_stop"] == 6
+
+        wattpilot.set_settings(
+            temperature_schedule=52.5,
+            temperature_solar=61.5,
+            temperature_force=48.0,
+            schedule_start=23,
+            schedule_stop=2,
+        ).get()
+
+        updated = wattpilot.get_settings().get()
+        assert updated["temperature_schedule"] == 52.5
+        assert updated["temperature_solar"] == 61.5
+        assert updated["temperature_force"] == 48.0
+        assert updated["schedule_start"] == 23
+        assert updated["schedule_stop"] == 2
+
+    def test_schedule_wrap_around_midnight(self, mocker, wattpilot, gpio, power, weather, temperature):
+        # Configure schedule window from 23:00 to 02:00
+        wattpilot.set_settings(
+            temperature_schedule=50.0,
+            temperature_solar=60.0,
+            temperature_force=55.0,
+            schedule_start=23,
+            schedule_stop=2,
+        ).get()
+
+        power.get_power.return_value = FakeFuture(0)
+        weather.get_cloudiness.return_value = FakeFuture(0)
+        temperature.get_temperature.return_value = FakeFuture(40)
+        wattpilot.idle.defer()
+        wattpilot.set_schedule_trigger(True).get()
+
+        # Before start (22:30) - should stay idle
+        with freeze_time("1981-05-30 22:30:00", tick=True):
+            wattpilot.update_power().get()
+            assert wattpilot.is_idle().get()
+
+        # At 23:00:01 - should start schedule
+        with freeze_time("1981-05-30 23:00:01", tick=True):
+            wattpilot.update_power().get()
+            assert wattpilot.is_schedule().get()
+        gpio.set_pin.assert_has_calls([mocker.call(1, True), mocker.call(2, True)])
+
+        # Past midnight at 01:15:00 - should still stay in schedule
+        with freeze_time("1981-05-31 01:15:00", tick=True):
+            assert wattpilot.is_schedule().get()
+
+        # At 02:00:01 - schedule window ended, should transition to idle
+        gpio.set_pin.reset_mock()
+        with freeze_time("1981-05-31 02:00:01", tick=True):
+            wait_with_timeout(lambda: wattpilot.is_idle().get())
+        gpio.set_pin.assert_has_calls([mocker.call(1, False), mocker.call(2, False)])

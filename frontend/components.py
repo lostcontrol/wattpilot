@@ -20,6 +20,8 @@ from typing import ClassVar
 
 from nicegui import ui
 
+from wattpilot.settings import get_schedule_duration
+
 from .i18n import i18n
 
 
@@ -242,3 +244,114 @@ class WeatherTile:
         else:
             self.__trigger_label.text = i18n.t("weather.will_not_run")
             self.__trigger_label.classes(remove="is-run", add="is-solar")
+
+
+class SchedulePeriodChart:
+    """Visual 24-hour timeline displaying off-peak scheduled heating window."""
+
+    def __init__(self) -> None:
+        self.__container = ui.column().classes("wp-settings-item")
+        with self.__container:
+            with ui.row().classes("wp-period-header"):
+                self.__duration_label = ui.label("").classes("wp-period-duration")
+                self.__now_label = ui.label("").classes("wp-period-now")
+            self.__html = ui.html("", tag="div").classes("w-full")
+
+    def update(self, start: int, stop: int, now_time: datetime | None = None) -> None:
+        local_now = now_time or datetime.now().astimezone()
+        duration = get_schedule_duration(start, stop)
+        if start == stop:
+            self.__duration_label.text = i18n.t("settings.equal_hours_error")
+            self.__duration_label.classes(add="is-invalid")
+        else:
+            self.__duration_label.text = i18n.t(
+                "settings.duration",
+                start=f"{start:02d}",
+                stop=f"{stop:02d}",
+                duration=duration,
+            )
+            self.__duration_label.classes(remove="is-invalid")
+
+        self.__now_label.text = i18n.t("settings.now_indicator", time=local_now.strftime("%H:%M"))
+        self.__html.content = self.__generate_period_svg(start, stop, local_now)
+
+    @staticmethod
+    def __generate_period_svg(start: int, stop: int, now_time: datetime | None = None) -> str:
+        """Generate SVG visualization of 24h schedule period with midnight wrap-around."""
+        track_x = 10
+        track_y = 14
+        track_w = 460
+        track_h = 20
+        slot_w = track_w / 24.0
+
+        rects: list[str] = []
+        if start != stop:
+            if start < stop:
+                rx = track_x + start * slot_w
+                rw = (stop - start) * slot_w
+                rects.append(
+                    f'<rect x="{rx:.1f}" y="{track_y}" width="{rw:.1f}" height="{track_h}" rx="6" '
+                    f'class="wp-period-active" />'
+                )
+            else:
+                # Wraps across midnight: two segments [start..24) and [0..stop)
+                rx1 = track_x + start * slot_w
+                rw1 = (24 - start) * slot_w
+                rx2 = track_x
+                rw2 = stop * slot_w
+                rects.append(
+                    f'<rect x="{rx1:.1f}" y="{track_y}" width="{rw1:.1f}" height="{track_h}" rx="6" '
+                    f'class="wp-period-active" />'
+                )
+                rects.append(
+                    f'<rect x="{rx2:.1f}" y="{track_y}" width="{rw2:.1f}" height="{track_h}" rx="6" '
+                    f'class="wp-period-active" />'
+                )
+
+        # Major hour labels & ticks: 0, 6, 12, 18, 24
+        ticks: list[str] = []
+        labels: list[str] = []
+        for h in (0, 6, 12, 18, 24):
+            lx = track_x + h * slot_w
+            ticks.append(
+                f'<line x1="{lx:.1f}" y1="{track_y + track_h}" x2="{lx:.1f}" y2="{track_y + track_h + 4}" '
+                f'class="wp-period-tick" />'
+            )
+            anchor = "start" if h == 0 else ("end" if h == 24 else "middle")
+            labels.append(
+                f'<text x="{lx:.1f}" y="{track_y + track_h + 16}" text-anchor="{anchor}" '
+                f'class="wp-period-tick-label">{h:02d}:00</text>'
+            )
+
+        # Hour dividers (subtle)
+        dividers: list[str] = []
+        for h in range(1, 24):
+            dx = track_x + h * slot_w
+            dividers.append(
+                f'<line x1="{dx:.1f}" y1="{track_y}" x2="{dx:.1f}" y2="{track_y + track_h}" '
+                f'class="wp-period-divider" />'
+            )
+
+        # Current time marker
+        marker = ""
+        if now_time:
+            local_hour = now_time.hour + now_time.minute / 60.0
+            mx = track_x + local_hour * slot_w
+            marker = (
+                f'<line x1="{mx:.1f}" y1="5" x2="{mx:.1f}" y2="{track_y + track_h + 4}" '
+                f'class="wp-period-marker" />'
+                f'<polygon points="{mx:.1f},11 {mx - 4:.1f},4 {mx + 4:.1f},4" class="wp-period-marker-needle" />'
+            )
+
+        return (
+            f'<svg viewBox="0 0 480 56" width="100%" height="auto" class="wp-period-svg" '
+            f'xmlns="http://www.w3.org/2000/svg">'
+            f'<rect x="{track_x}" y="{track_y}" width="{track_w}" height="{track_h}" rx="6" '
+            f'class="wp-period-track" />'
+            + "".join(rects)
+            + "".join(dividers)
+            + "".join(ticks)
+            + "".join(labels)
+            + marker
+            + "</svg>"
+        )

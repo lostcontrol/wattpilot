@@ -653,6 +653,160 @@ body {
   color: #fbbf24;
 }
 
+/* Settings card internal styling */
+.wp-settings-group {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.wp-settings-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--wp-idle);
+}
+
+.wp-settings-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--wp-text);
+}
+
+.wp-settings-item {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: var(--wp-radius-sm);
+  background: rgba(148, 163, 184, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px solid var(--wp-border);
+}
+
+.wp-settings-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+}
+
+.wp-settings-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.wp-settings-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.wp-settings-desc {
+  font-size: 0.75rem;
+  color: var(--wp-text-muted);
+}
+
+.wp-settings-value {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--wp-idle);
+  flex-shrink: 0;
+}
+
+.wp-settings-actions {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.wp-settings-save-btn {
+  font-weight: 600;
+  padding: 0 24px;
+}
+
+@media (max-width: 639px) {
+  .wp-settings-save-btn {
+    width: 100%;
+  }
+}
+
+/* Period timeline styling */
+.wp-period-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+}
+
+.wp-period-duration {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--wp-schedule);
+}
+
+.wp-period-duration.is-invalid {
+  color: #ef4444 !important;
+}
+
+.wp-period-now {
+  font-size: 0.75rem;
+  color: var(--wp-text-muted);
+}
+
+.wp-period-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.wp-period-track {
+  fill: currentColor;
+  fill-opacity: 0.08;
+  stroke: currentColor;
+  stroke-opacity: 0.12;
+  stroke-width: 1;
+}
+
+.wp-period-active {
+  fill: var(--wp-schedule);
+}
+
+.wp-period-divider {
+  stroke: #ffffff;
+  stroke-opacity: 0.15;
+  stroke-width: 1;
+}
+
+.wp-period-tick {
+  stroke: currentColor;
+  stroke-opacity: 0.3;
+  stroke-width: 1.5;
+}
+
+.wp-period-tick-label {
+  font-size: 11px;
+  font-weight: 500;
+  fill: currentColor;
+  fill-opacity: 0.6;
+}
+
+.wp-period-marker {
+  stroke: var(--wp-force);
+  stroke-width: 2;
+  stroke-dasharray: 2, 2;
+}
+
+.wp-period-marker-needle {
+  fill: var(--wp-force);
+}
+
 /* Keyframes */
 @keyframes wp-pulse {
   0%, 100% { opacity: 1; transform: scale(1); }

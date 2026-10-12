@@ -37,3 +37,17 @@ Open <http://localhost:8080> in your browser (or <http://localhost/> via `docker
 The web interface is built with [NiceGUI](https://nicegui.io/) located in the `frontend/` directory. It is optimized for mobile and desktop, and supports multiple languages (English and French by default, configured via JSON files in `frontend/locales/`).
 
 Page-level authentication can be added by providing a custom `AuthPolicy` subclass to `FrontendApp`. It only gates the pages, not the static files or the websocket.
+
+## Configuration & UI Settings
+
+Configuration is loaded in cascading order (later files override earlier ones):
+1. `config.ini`: Base configuration defaults.
+2. `config.ini.local`: Local hardware/site configuration.
+3. `config.ini.settings` (or custom path via `WATTPILOT_SETTINGS` environment variable): UI-configured settings with highest priority.
+
+From the web UI (under **Control**), you can configure:
+* **Boiler temperatures** for scheduled, solar surplus, and forced heating modes (45.0 to 65.0 °C in 0.5 °C increments).
+* **Schedule off-peak window** (start and end hour in local system timezone, with support for midnight wrap-around such as 23:00 to 02:00).
+* An interactive 24-hour visual timeline of the off-peak period.
+
+Changes take effect immediately and are saved to the persistent settings file. In Docker, persist this file by mounting a volume (e.g. `/data` with `WATTPILOT_SETTINGS=/data/config.ini.settings`).
