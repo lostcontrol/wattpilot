@@ -8,7 +8,7 @@ This document provides context, architectural rules, engineering standards, and 
 
 Wattpilot is an intelligent water boiler controller designed to optimize photovoltaic (PV) auto-consumption. Instead of expensive variable-resistance hardware, it discretely controls multiple heating elements (typically 3 electrical resistances) in a hot water boiler based on:
 - Solar surplus exported to the grid (interfacing with Fronius inverters).
-- Next-day cloudiness / weather forecasts (OpenWeatherMap API).
+- Forecast cloudiness / weather forecasts (OpenWeatherMap API).
 - Configurable off-peak electricity schedule windows.
 - Manual "force" heating mode with temperature hysteresis.
 

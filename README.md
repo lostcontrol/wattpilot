@@ -20,7 +20,7 @@ With solar photovoltaic (PV) systems, homeowners frequently export excess electr
 **Wattpilot** provides a lightweight, cost-effective, DIY solution. Instead of continuously modulating power via expensive thyristor electronics, it discretely switches multiple heating elements (typically 3 electrical resistances, e.g. 3 × 1,333 W) based on:
 
 1. **Real-Time Solar Surplus**: Exported power measured directly from Fronius inverters.
-2. **Predictive Weather Forecasts**: Tomorrow's cloud cover retrieved from OpenWeatherMap.
+2. **Predictive Weather Forecasts**: Upcoming cloud cover retrieved from OpenWeatherMap.
 3. **Scheduled Off-Peak Windows**: User-defined off-peak heating periods with midnight wrap-around.
 4. **Target Temperatures & Hysteresis**: Independent temperature setpoints for solar, scheduled, and forced modes.
 
@@ -30,7 +30,7 @@ With solar photovoltaic (PV) systems, homeowners frequently export excess electr
 
 - **⚡ Multi-Stage Load Switching**: Dynamically steps through 1 to $N$ heating elements according to instantaneous solar export, maximizing self-consumption without expensive variable-power hardware.
 - **☀️ Real-Time Solar Surplus Tracking**: Directly queries the Fronius Solar API to detect surplus generation and adjust active boiler loads on the fly.
-- **🌤️ Predictive Weather Forecasting**: Queries [OpenWeatherMap](https://openweathermap.org/) prior to the scheduled heating window. If tomorrow will be sunny, grid heating is suppressed to reserve boiler capacity for solar energy; if heavy cloudiness is predicted, off-peak grid heating engages as a backup.
+- **🌤️ Predictive Weather Forecasting**: Periodically queries [OpenWeatherMap](https://openweathermap.org/) for upcoming cloud cover. During the scheduled window, real-time solar surplus takes precedence; otherwise, if clear weather is forecast, grid heating is suppressed to reserve boiler capacity for solar auto-consumption. If heavy cloudiness is predicted (exceeding a configurable threshold), backup grid heating engages to ensure the target temperature is reached.
 - **⏱️ Flexible Off-Peak Schedule**: Configurable schedule window with full support for midnight wrap-around (e.g. 23:00 to 02:00) and an interactive 24-hour visual timeline.
 - **🌡️ Granular Temperature Setpoints**: Set distinct boiler target temperatures for solar surplus, scheduled off-peak, and manual force heating (45.0 °C to 65.0 °C in 0.5 °C steps) with automatic temperature hysteresis.
 - **📱 Modern Reactive Dashboard**: Sleek web interface built with [NiceGUI](https://nicegui.io/), featuring live temperature gauges, heating element indicators, one-click mode switching, and bilingual localization (English & French).
@@ -158,7 +158,7 @@ The web interface is decoupled under the `frontend/` directory and delivers an i
   - Live system state badge (`En attente / Idle`, `Solaire / Solar`, `Programmé / Schedule`, `Forcer / Force`).
   - Circular water temperature gauge with live readings.
   - Multi-stage heating element status indicators.
-  - Next-day weather forecast preview with cloud cover percentage.
+  - Upcoming weather forecast preview with cloud cover percentage and schedule decision badge.
   - One-click trigger for the upcoming off-peak scheduled period.
   - Fast mode switcher (Attente, Forcer, Arrêter).
 - **Control Page**:
