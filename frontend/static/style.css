@@ -113,6 +113,11 @@ body {
   .wp-grid {
     grid-template-columns: 1fr 1fr;
   }
+
+  .wp-col-span-2,
+  .col-span-2 {
+    grid-column: span 2 !important;
+  }
 }
 
 /* Card base */
@@ -143,7 +148,8 @@ body {
   color: var(--wp-text-muted);
 }
 
-.wp-hero-span {
+.wp-hero-span,
+.wp-col-span-2 {
   grid-column: 1 / -1 !important;
   width: 100% !important;
 }
