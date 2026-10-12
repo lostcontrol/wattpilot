@@ -1,53 +1,204 @@
 # Wattpilot
 
+**Intelligent water boiler controller optimizing photovoltaic (PV) auto-consumption with multi-stage resistance heating and weather forecasts.**
+
 [![CI](https://github.com/lostcontrol/wattpilot/actions/workflows/ci.yml/badge.svg)](https://github.com/lostcontrol/wattpilot/actions/workflows/ci.yml)
+![Python 3.14+](https://img.shields.io/badge/python-3.14+-blue.svg)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![License: GPL v2](https://img.shields.io/badge/License-GPL_v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.html)
 
-## Introduction
+---
 
-We have recently installed solar panels (photovoltaic). One of the challenge is to increase your auto-consumption. One of the main consumer we have is the water boiler. It used to run at night to benefit from off-peak tariff. We decided to build a system to pilot the water boiler in a way that it would improve the auto-consumption.
+![Wattpilot Dashboard](docs/screenshot.png)
 
-The system runs Axitec solar panels with a [Fronius Symo](https://www.fronius.com/en/photovoltaics/products/all-products/inverters/fronius-symo/fronius-symo-10-0-3-m) inverter. Fronius offers the [Ohmpilot](https://www.fronius.com/en/photovoltaics/products/all-products/solutions/fronius-solution-for-heat-generation/fronius-ohmpilot/fronius-ohmpilot) in order to do this. However, it does not take into account weather forecast and the cost is rather high. We wanted to make something DIY and more flexible.
+## Overview
 
-In order to keep the cost low, we didn't want to continuously adjust the output power like the Ohmpilot does. Instead, we are going to control separately the 3 resistances that are in the boiler.
+Domestic hot water boilers represent one of the largest single electrical energy consumers in a typical household. Traditionally, boilers heat water overnight during fixed off-peak hours using 100% grid electricity.
+
+With solar photovoltaic (PV) systems, homeowners frequently export excess electricity to the grid at low feed-in tariffs. Commercial continuous-modulation controllers (such as the Fronius Ohmpilot) are expensive and lack predictive awareness of future weather.
+
+**Wattpilot** provides a lightweight, cost-effective, DIY solution. Instead of continuously modulating power via expensive thyristor electronics, it discretely switches multiple heating elements (typically 3 electrical resistances, e.g. 3 × 1,333 W) based on:
+
+1. **Real-Time Solar Surplus**: Exported power measured directly from Fronius inverters.
+2. **Predictive Weather Forecasts**: Tomorrow's cloud cover retrieved from OpenWeatherMap.
+3. **Scheduled Off-Peak Windows**: User-defined off-peak heating periods with midnight wrap-around.
+4. **Target Temperatures & Hysteresis**: Independent temperature setpoints for solar, scheduled, and forced modes.
+
+---
 
 ## Features
 
-* Wattpilot can control from 1 to N loads, switching them on and off based on the exported power.
-* A schedule can be define which is meant to warm the water during the off-peak period.
-* Just before the scheduled period, the weather forecast for the coming day will be fetched from [OpenWeather](https://openweathermap.org/) and if the sky is going to be very cloudy, the water will be warmed during the scheduled period.
-* The next scheduled period can be set manually to be triggered in any case.
-* A force mode allows the user to start/stop the heating manually at any time.
+- **⚡ Multi-Stage Load Switching**: Dynamically steps through 1 to $N$ heating elements according to instantaneous solar export, maximizing self-consumption without expensive variable-power hardware.
+- **☀️ Real-Time Solar Surplus Tracking**: Directly queries the Fronius Solar API to detect surplus generation and adjust active boiler loads on the fly.
+- **🌤️ Predictive Weather Forecasting**: Queries [OpenWeatherMap](https://openweathermap.org/) prior to the scheduled heating window. If tomorrow will be sunny, grid heating is suppressed to reserve boiler capacity for solar energy; if heavy cloudiness is predicted, off-peak grid heating engages as a backup.
+- **⏱️ Flexible Off-Peak Schedule**: Configurable schedule window with full support for midnight wrap-around (e.g. 23:00 to 02:00) and an interactive 24-hour visual timeline.
+- **🌡️ Granular Temperature Setpoints**: Set distinct boiler target temperatures for solar surplus, scheduled off-peak, and manual force heating (45.0 °C to 65.0 °C in 0.5 °C steps) with automatic temperature hysteresis.
+- **📱 Modern Reactive Dashboard**: Sleek web interface built with [NiceGUI](https://nicegui.io/), featuring live temperature gauges, heating element indicators, one-click mode switching, and bilingual localization (English & French).
+- **📊 PVOutput Telemetry**: Built-in support to stream temperature and power telemetry to [PVOutput](https://pvoutput.org/).
+- **🐳 Docker & Raspberry Pi Native**: Runs in Docker with simulated devices for local testing or directly on Raspberry Pi hardware using GPIO and 1-Wire DS18B20 sensors.
 
-## Running
+---
 
-Install dependencies:
+## Architecture
+
+Wattpilot is built using the [Pykka](https://www.pykka.org/) actor model for concurrent, non-blocking hardware control:
+
+- **`WattPilot`**: Core actor governing the boiler state machine (`idle`, `solar`, `schedule`, `force`, `halt`).
+- **`Fronius`**: Inverter interface polling grid export metrics.
+- **`OpenWeatherMap`**: Weather client fetching forecast cloudiness percentages.
+- **`Temperature`**: Polling actor for 1-Wire DS18B20 temperature sensors.
+- **`PVOutput`**: Telemetry actor transmitting live status to PVOutput.
+- **`FrontendApp` & `BackendService`**: Decoupled, reactive NiceGUI application interfacing via actor proxies.
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Python 3.14+
+- [`uv`](https://docs.astral.sh/uv/) package manager
+- (Optional) Docker and Docker Compose
+
+### Local Development (Simulated Hardware)
+
+Clone the repository and install dependencies:
 
 ```bash
+git clone https://github.com/lostcontrol/wattpilot.git
+cd wattpilot
 uv sync
 ```
 
-Run in development mode with fake hardware devices:
+Launch Wattpilot in simulated device mode:
 
 ```bash
 uv run python wattpilot.py --fake-devices
 ```
 
-Open <http://localhost:8080> in your browser (or <http://localhost/> via `docker compose up`, and <http://localhost:8088/> via `docker compose -f docker-compose.development.yml up`).
+Open [http://localhost:8080](http://localhost:8080) in your browser.
 
-The web interface is built with [NiceGUI](https://nicegui.io/) located in the `frontend/` directory. It is optimized for mobile and desktop, and supports multiple languages (English and French by default, configured via JSON files in `frontend/locales/`).
+### Docker Deployment
 
-Page-level authentication can be added by providing a custom `AuthPolicy` subclass to `FrontendApp`. It only gates the pages, not the static files or the websocket.
+#### Standard Production Container
 
-## Configuration & UI Settings
+```bash
+docker compose up -d
+```
+Access the dashboard at [http://localhost](http://localhost) (port 80).
 
-Configuration is loaded in cascading order (later files override earlier ones):
-1. `config.ini`: Base configuration defaults.
-2. `config.ini.local`: Local hardware/site configuration.
-3. `config.ini.settings` (or custom path via `WATTPILOT_SETTINGS` environment variable): UI-configured settings with highest priority.
+#### Development Container
 
-From the web UI (under **Control**), you can configure:
-* **Boiler temperatures** for scheduled, solar surplus, and forced heating modes (45.0 to 65.0 °C in 0.5 °C increments).
-* **Schedule off-peak window** (start and end hour in local system timezone, with support for midnight wrap-around such as 23:00 to 02:00).
-* An interactive 24-hour visual timeline of the off-peak period.
+```bash
+docker compose -f docker-compose.development.yml up
+```
+Access the development interface at [http://localhost:8088](http://localhost:8088).
 
-Changes take effect immediately and are saved to the persistent settings file. In Docker, persist this file by mounting a volume (e.g. `/data` with `WATTPILOT_SETTINGS=/data/config.ini.settings`).
+#### Raspberry Pi Hardware Deployment
+
+```bash
+docker compose -f docker-compose.rpi.yml up -d
+```
+Maps `/dev/gpiomem` and `/dev/mem` for native GPIO pin control and DS18B20 1-Wire temperature bus access.
+
+---
+
+## Configuration
+
+Wattpilot uses a 3-tier cascading INI configuration system where later files override earlier ones:
+
+1. **`config.ini`**: Base defaults tracked in git.
+2. **`config.ini.local`**: Local site configuration, hardware pins, API keys, and inverter IP addresses (gitignored).
+3. **`config.ini.settings`**: Runtime UI settings persisted by the web interface (highest priority). The file path can be customized via the `WATTPILOT_SETTINGS` environment variable.
+
+### Example `config.ini.local`
+
+Create a `config.ini.local` file to specify your hardware and credentials:
+
+```ini
+[main]
+hysteresis_to_grid = 500
+hysteresis_from_grid = 0
+fronius_host = 192.168.1.50
+cloudiness_level = 75
+
+[temperature]
+address = 28-0416350909ff
+
+[openweathermap]
+lat = 46.2044
+lon = 6.1432
+key = YOUR_OPENWEATHERMAP_API_KEY
+
+[pvoutput]
+key = YOUR_PVOUTPUT_API_KEY
+sid = YOUR_PVOUTPUT_SYSTEM_ID
+field = v12
+
+[load_1]
+power = 1333
+pin = 26
+
+[load_2]
+power = 1333
+pin = 20
+
+[load_3]
+power = 1333
+pin = 21
+```
+
+---
+
+## Web Interface
+
+The web interface is decoupled under the `frontend/` directory and delivers an intuitive, mobile-optimized experience:
+
+- **Dashboard**:
+  - Live system state badge (`En attente / Idle`, `Solaire / Solar`, `Programmé / Schedule`, `Forcer / Force`).
+  - Circular water temperature gauge with live readings.
+  - Multi-stage heating element status indicators.
+  - Next-day weather forecast preview with cloud cover percentage.
+  - One-click trigger for the upcoming off-peak scheduled period.
+  - Fast mode switcher (Attente, Forcer, Arrêter).
+- **Control Page**:
+  - Adjust target temperatures for solar surplus, scheduled heating, and force mode (45.0 °C to 65.0 °C in 0.5 °C steps).
+  - Set off-peak schedule start and stop hours with immediate 24-hour visual period rendering.
+  - Settings are validated and written directly to the persistent settings file.
+- **Internationalization**:
+  - Full English and French support (`frontend/locales/en.json` and `frontend/locales/fr.json`).
+  - Automatic language detection with preference stored in client-side cookies (`wattpilot_lang`).
+
+---
+
+## Development & Testing
+
+### Running Tests
+
+Execute the unit and integration test suite:
+
+```bash
+uv run pytest -v -s --cov=wattpilot --cov-report term test/
+```
+
+### Code Formatting & Type Checking
+
+Run all pre-commit hooks:
+
+```bash
+uv run pre-commit run --all-files
+```
+
+Or run tools individually:
+
+```bash
+uv run ruff check --fix .
+uv run ruff format .
+uv run ty check
+```
+
+---
+
+## License
+
+This project is licensed under the terms of the [GNU General Public License v2 (GPL-2.0)](LICENSE).
