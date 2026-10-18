@@ -56,7 +56,7 @@ Wattpilot is an intelligent water boiler controller designed to optimize photovo
 
 ## 3. Environment, Tooling & CI/CD
 
-- **Python Version**: Python 3.14 (Docker base image `python:3.14-trixie`). Do not upgrade to Python 3.15 until official Docker images are available.
+- **Python Version**: Python 3.15 (Docker base image `python:3.15-trixie`).
 - **Package Manager**: **`uv`**. Use `uv sync`, `uv add`, and `uv run`. Lockfile is `uv.lock`. Do not maintain loose `requirements.txt` files.
 - **Devcontainer**:
   - Configured via `.devcontainer/devcontainer.json` and `.devcontainer/docker-compose.yml`.

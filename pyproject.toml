@@ -3,11 +3,11 @@ name = "wattpilot"
 version = "0.1.0"
 description = ""
 readme = "README.md"
-requires-python = ">=3.14"
+requires-python = ">=3.15"
 classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python",
-  "Programming Language :: Python :: 3.14",
+  "Programming Language :: Python :: 3.15",
   "Programming Language :: Python :: Implementation :: CPython",
 ]
 dependencies = [
@@ -21,12 +21,12 @@ dependencies = [
 [dependency-groups]
 dev = [
     "freezegun>=1.5.5",
-    "pre-commit>=4.6.2",
+    "pre-commit>=4.7.0",
     "pytest>=9.1.1",
     "pytest-cov>=7.1.0",
-    "pytest-mock>=3.16.0",
-    "ruff>=0.17.0",
-    "ty>=0.0.86",
+    "pytest-mock>=3.17.0",
+    "ruff>=0.17.1",
+    "ty>=0.0.89",
     "types-rpi-gpio>=0.7.0.20260508",
 ]
 
@@ -45,7 +45,7 @@ include = ["wattpilot*", "frontend*"]
 pythonpath = ["."]
 
 [tool.ruff]
-target-version = "py314"
+target-version = "py315"
 line-length = 120
 extend-exclude = [".venv"]
 

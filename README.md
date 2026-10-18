@@ -3,7 +3,7 @@
 **Intelligent water boiler controller optimizing photovoltaic (PV) auto-consumption with multi-stage resistance heating and weather forecasts.**
 
 [![CI](https://github.com/lostcontrol/wattpilot/actions/workflows/ci.yml/badge.svg)](https://github.com/lostcontrol/wattpilot/actions/workflows/ci.yml)
-![Python 3.14+](https://img.shields.io/badge/python-3.14+-blue.svg)
+![Python 3.15+](https://img.shields.io/badge/python-3.15+-blue.svg)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![License: GPL v2](https://img.shields.io/badge/License-GPL_v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.html)
 
@@ -56,7 +56,7 @@ Wattpilot is built using the [Pykka](https://www.pykka.org/) actor model for con
 
 ### Prerequisites
 
-- Python 3.14+
+- Python 3.15+
 - [`uv`](https://docs.astral.sh/uv/) package manager
 - (Optional) Docker and Docker Compose
 
