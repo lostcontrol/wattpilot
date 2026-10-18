@@ -19,7 +19,7 @@ import logging
 
 from nicegui import events, ui
 
-from ..components import Card, HeatingBars, StateHero, TemperatureGauge, WeatherTile
+from ..components import Card, HeatingBars, HistoryChart, StateHero, TemperatureGauge, WeatherTile
 from ..i18n import i18n
 from ..store import SnapshotStore
 from .page import Page
@@ -43,6 +43,7 @@ class DashboardPage(Page):
         self.__temperature: TemperatureGauge | None = None
         self.__loads: HeatingBars | None = None
         self.__weather: WeatherTile | None = None
+        self.__history: HistoryChart | None = None
         self.__switch: ui.switch | None = None
         self.__banner: ui.element | None = None
         self.__updating_switch: bool = False
@@ -81,6 +82,9 @@ class DashboardPage(Page):
                         .props("color=primary")
                         .classes("shrink-0")
                     )
+
+            # Boiler temperature and heating elements history chart
+            self.__history = HistoryChart()
 
             # Change mode card
             with Card(title_key="control.change_mode", icon="tune", classes="wp-col-span-2"):
@@ -209,6 +213,11 @@ class DashboardPage(Page):
                 snapshot.cloudiness if snapshot.ok else None,
                 snapshot.forecast_time if snapshot.ok else None,
                 snapshot.will_run if snapshot.ok else False,
+            )
+        if self.__history:
+            self.__history.update(
+                snapshot.history if snapshot.ok else [],
+                len(snapshot.all_loads) if snapshot.ok and snapshot.all_loads else 3,
             )
         if self.__switch and self.__switch.value != snapshot.schedule_trigger:
             self.__updating_switch = True

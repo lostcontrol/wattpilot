@@ -51,6 +51,15 @@
     "label": "Heat at the next scheduled slot",
     "hint": "Manually enables heating during the next configured night/off-peak window."
   },
+  "chart": {
+    "title": "Temperature & Heating History",
+    "temperature": "Temperature",
+    "loads": "Heating Elements",
+    "range_1d": "24h",
+    "range_3d": "3d",
+    "range_7d": "7d",
+    "empty": "No history data recorded yet"
+  },
   "control": {
     "title": "System Mode",
     "change_mode": "Change Mode",

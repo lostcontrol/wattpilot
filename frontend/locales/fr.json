@@ -51,6 +51,15 @@
     "label": "Chauffer lors de la prochaine plage horaire",
     "hint": "Active manuellement le chauffage lors de la prochaine fenêtre d'heures creuses configurée."
   },
+  "chart": {
+    "title": "Historique température & chauffe",
+    "temperature": "Température",
+    "loads": "Corps de chauffe",
+    "range_1d": "24h",
+    "range_3d": "3j",
+    "range_7d": "7j",
+    "empty": "Aucune donnée historique enregistrée"
+  },
   "control": {
     "title": "Mode de fonctionnement",
     "change_mode": "Changer de mode",

@@ -17,11 +17,16 @@
 
 import configparser
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, cast
 
 import pytest
 
+from frontend.components import HistoryChart
+from frontend.pages.control import ControlPage
+from frontend.service import BackendService, Snapshot
+from wattpilot.database import MetricPoint
 from wattpilot.settings import (
     SettingsFile,
     get_schedule_duration,
@@ -218,10 +223,8 @@ class TestLocalesConsistency:
 class TestBackendServiceSettings:
     @pytest.mark.anyio
     async def test_backend_service_snapshot_and_set_settings(self, mocker, tmp_path: Path):
-        from frontend.service import BackendService
-
         wattpilot_mock = mocker.Mock()
-        wattpilot_mock.state.get.return_value = "idle"
+        wattpilot_mock.get_state.return_value.get.return_value = "idle"
         wattpilot_mock.get_active_loads.return_value.get.return_value = []
         wattpilot_mock.get_schedule_trigger.return_value.get.return_value = False
         wattpilot_mock.get_scheduled_by_weather.return_value.get.return_value = False
@@ -239,17 +242,23 @@ class TestBackendServiceSettings:
         temp_mock = mocker.Mock()
         temp_mock.get_temperature.return_value.get.return_value = 55.0
 
+        db_mock = mocker.Mock()
+        db_mock.get_history.return_value.get.return_value = [MetricPoint(1700000000, 55.0, 1)]
+
         sf = SettingsFile(tmp_path / "settings.ini")
         service = BackendService(
             wattpilot_mock,
             weather_mock,
             temp_mock,
+            database=db_mock,
             load_names={1: "load_1"},
             settings_file=sf,
         )
 
         snapshot = await service.snapshot()
         assert snapshot.ok
+        assert len(snapshot.history) == 1
+        assert snapshot.history[0].temperature == 55.0
         assert snapshot.temperature_schedule == 52.0
         assert snapshot.temperature_solar == 62.0
         assert snapshot.temperature_force == 50.0
@@ -279,9 +288,6 @@ class TestBackendServiceSettings:
 
 class TestControlPageSettingsSync:
     def test_sync_does_not_mark_dirty_and_accepts_updates(self, mocker):
-        from frontend.pages.control import ControlPage
-        from frontend.service import Snapshot
-
         store = mocker.Mock()
         store.snapshot = Snapshot(
             ok=True,
@@ -350,3 +356,56 @@ class TestControlPageSettingsSync:
         )
         page.update()
         assert getattr(page, "_ControlPage__temp_schedule_slider").value == 58.0
+
+
+class TestHistoryChart:
+    def test_build_options_stepped_area(self):
+        history = [
+            MetricPoint(1700000000, 50.0, 0),
+            MetricPoint(1700000060, 52.0, 3),
+            MetricPoint(1700000120, 54.0, 3),
+            MetricPoint(1700000180, 55.0, 0),
+        ]
+        options = getattr(HistoryChart, "_HistoryChart__build_options")(history, 3, 1)
+
+        # 2 series: loads and temperature
+        assert len(options["series"]) == 2
+        loads_series = options["series"][0]
+        temp_series = options["series"][1]
+
+        # Loads should be a stepped area line chart (no gaps between consecutive active periods)
+        assert loads_series["type"] == "line"
+        assert loads_series["step"] == "end"
+        assert "areaStyle" in loads_series
+        assert loads_series["showSymbol"] is False
+
+        # Temperature should be a line chart on left y-axis
+        assert temp_series["type"] == "line"
+        assert temp_series["yAxisIndex"] == 0
+
+        # Legend icon for loads should be roundRect
+        legend_data = options["legend"]["data"]
+        assert any(isinstance(item, dict) and item.get("icon") == "roundRect" for item in legend_data)
+
+    def test_outage_closes_active_load(self):
+        # When an active load has a gap > 120s between samples, an intermediate drop to 0 is inserted after 60s
+        history = [
+            MetricPoint(1700000000, 50.0, 3),
+            MetricPoint(1700000300, 50.0, 0),  # 300s gap (>120s)
+        ]
+        options = getattr(HistoryChart, "_HistoryChart__build_options")(history, 3, 1)
+        loads_data = options["series"][0]["data"]
+        # Expected: (1700000000*1000, 3), ((1700000000+60)*1000, 0), (1700000300*1000, 0)
+        assert [1700000060000, 0] in loads_data
+
+    def test_recent_sample_extends_to_now(self):
+        now = int(datetime.now(tz=UTC).timestamp())
+        history = [
+            MetricPoint(now - 30, 55.0, 2),
+        ]
+        options = getattr(HistoryChart, "_HistoryChart__build_options")(history, 3, 1)
+        loads_data = options["series"][0]["data"]
+        # There should be a point extending close to current time with value 2
+        assert len(loads_data) == 2
+        assert loads_data[-1][1] == 2
+        assert loads_data[-1][0] >= (now - 30) * 1000

@@ -813,6 +813,50 @@ body {
   fill: var(--wp-force);
 }
 
+/* History chart card */
+.wp-chart-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.wp-chart-ranges {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(148, 163, 184, 0.12);
+  padding: 2px 4px;
+  border-radius: var(--wp-radius-sm);
+  border: 1px solid var(--wp-border);
+}
+
+.wp-chart-range-btn {
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  color: var(--wp-text-muted) !important;
+  min-width: 38px !important;
+  padding: 2px 8px !important;
+}
+
+.wp-chart-range-btn.is-active {
+  background: var(--wp-card-bg) !important;
+  color: var(--wp-idle) !important;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08) !important;
+}
+
+.wp-echart {
+  height: 260px !important;
+  width: 100% !important;
+}
+
+.wp-chart-empty {
+  color: var(--wp-text-muted);
+  font-size: 0.875rem;
+}
+
 /* Keyframes */
 @keyframes wp-pulse {
   0%, 100% { opacity: 1; transform: scale(1); }

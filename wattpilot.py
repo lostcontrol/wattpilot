@@ -19,6 +19,7 @@ import argparse
 import configparser
 import logging.config
 import os
+import random
 import threading
 import unittest.mock
 
@@ -27,13 +28,14 @@ import pykka
 from frontend.app import FrontendApp
 from frontend.service import BackendService
 from frontend.store import SnapshotStore
+from wattpilot.database import Database
 from wattpilot.device import Gpio, GpioDevice, TempSensorDevice
 from wattpilot.fronius import Fronius
 from wattpilot.openweathermap import OpenWeatherMap
 from wattpilot.pvoutput import PVOutput
 from wattpilot.settings import DEFAULT_SETTINGS_FILE, SettingsFile
 from wattpilot.temperature import Sensor, Temperature
-from wattpilot.wattpilot import WattPilot
+from wattpilot.wattpilot import MetricPoller, WattPilot
 
 
 def config(settings_path: str | None = None) -> configparser.ConfigParser:
@@ -58,6 +60,7 @@ def main() -> None:
     settings_file = SettingsFile()
     configuration = config(str(settings_file.path))
 
+    database: pykka.ActorProxy[Database] = Database.start().proxy()
     power: pykka.ActorProxy[Fronius] = Fronius.start(configuration).proxy()
     weather: pykka.ActorProxy[OpenWeatherMap] = OpenWeatherMap.start(configuration).proxy()
 
@@ -66,7 +69,7 @@ def main() -> None:
     if args.fake_devices:
         gpio = unittest.mock.Mock()
         mock_sensor = unittest.mock.Mock()
-        mock_sensor.value.return_value = 56.7
+        mock_sensor.value.side_effect = lambda: round(56.7 + random.uniform(-0.5, 0.5), 1)
         temperature_sensor = mock_sensor
     else:
         gpio = GpioDevice()
@@ -74,7 +77,9 @@ def main() -> None:
 
     temperature: pykka.ActorProxy[Temperature] = Temperature.start(configuration, temperature_sensor).proxy()
     pvoutput: pykka.ActorProxy[PVOutput] = PVOutput.start(configuration, temperature).proxy()
-    wattpilot: pykka.ActorProxy[WattPilot] = WattPilot.start(configuration, power, gpio, weather, temperature).proxy()
+    wattpilot: pykka.ActorProxy[WattPilot] = WattPilot.start(
+        configuration, power, gpio, weather, temperature, database
+    ).proxy()
 
     pin_to_name = {
         configuration.getint(sec, "pin"): sec.removeprefix("load_")
@@ -85,16 +90,18 @@ def main() -> None:
         wattpilot,
         weather,
         temperature,
+        database=database,
         load_names=pin_to_name,
         settings_file=settings_file,
     )
     store = SnapshotStore(service)
+    poller: pykka.ActorProxy[MetricPoller] = MetricPoller.start(database, temperature, wattpilot).proxy()
 
     # Wait for the first temperature to be read
     temperature.run().get()
-    pvoutput.run.defer()
-
-    wattpilot.idle.defer()
+    poller.run().get()
+    pvoutput.run().get()
+    wattpilot.idle().get()
 
     cleaned_up = threading.Event()
 

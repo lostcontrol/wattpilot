@@ -15,11 +15,12 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-from datetime import datetime
-from typing import ClassVar
+from datetime import UTC, datetime
+from typing import Any, ClassVar
 
 from nicegui import ui
 
+from wattpilot.database import MetricPoint
 from wattpilot.settings import get_schedule_duration
 
 from .i18n import i18n
@@ -355,3 +356,217 @@ class SchedulePeriodChart:
             + marker
             + "</svg>"
         )
+
+
+class HistoryChart:
+    """Card spanning 2 columns showing boiler temperature & loads chart with zoom controls."""
+
+    RANGE_OPTIONS: ClassVar[tuple[tuple[int, str], ...]] = (
+        (1, "chart.range_1d"),
+        (3, "chart.range_3d"),
+        (7, "chart.range_7d"),
+    )
+
+    def __init__(self) -> None:
+        self.__selected_days: int = 1
+        self.__last_history_len: int = -1
+        self.__last_history_ts: int = -1
+        self.__cached_history: list[MetricPoint] = []
+        self.__cached_total_loads: int = 3
+        self.__range_buttons: dict[int, ui.button] = {}
+
+        self.__card = ui.card().classes("wp-card wp-col-span-2")
+        with self.__card:
+            with ui.row().classes("wp-chart-header"):
+                ui.label(i18n.t("chart.title")).classes("wp-label")
+                with ui.row().classes("wp-chart-ranges"):
+                    for days, label_key in self.RANGE_OPTIONS:
+                        btn = (
+                            ui.button(
+                                i18n.t(label_key),
+                                on_click=lambda d=days: self.__set_range(d),
+                            )
+                            .props("dense flat no-caps size=sm")
+                            .classes("wp-chart-range-btn")
+                        )
+                        if days == self.__selected_days:
+                            btn.classes(add="is-active")
+                        self.__range_buttons[days] = btn
+
+            self.__empty_label = ui.label(i18n.t("chart.empty")).classes("wp-chart-empty text-center py-8 w-full")
+            self.__chart = ui.echart(self.__build_options([], 3, 1)).classes("wp-echart w-full")
+            self.__chart.visible = False
+
+    def __set_range(self, days: int) -> None:
+        if self.__selected_days == days:
+            return
+        self.__selected_days = days
+        for d, btn in self.__range_buttons.items():
+            if d == days:
+                btn.classes(add="is-active")
+            else:
+                btn.classes(remove="is-active")
+        self.__update_chart_options(
+            self.__build_options(self.__cached_history, self.__cached_total_loads, self.__selected_days)
+        )
+
+    def __update_chart_options(self, options: dict[str, Any]) -> None:
+        self.__chart.options.clear()
+        self.__chart.options.update(options)
+        self.__chart.update()
+
+    def update(
+        self,
+        history: list[MetricPoint],
+        total_loads: int = 3,
+    ) -> None:
+        new_len = len(history)
+        new_ts = history[-1].timestamp if history else -1
+
+        if new_len != self.__last_history_len or new_ts != self.__last_history_ts:
+            self.__last_history_len = new_len
+            self.__last_history_ts = new_ts
+            self.__cached_history = history
+            self.__cached_total_loads = max(1, total_loads)
+
+            if not history:
+                self.__empty_label.set_visibility(True)
+                self.__chart.set_visibility(False)
+            else:
+                self.__empty_label.set_visibility(False)
+                self.__chart.set_visibility(True)
+                self.__update_chart_options(
+                    self.__build_options(history, self.__cached_total_loads, self.__selected_days)
+                )
+
+    @staticmethod
+    def __build_options(
+        history: list[MetricPoint],
+        total_loads: int,
+        range_days: int,
+    ) -> dict[str, Any]:
+        temp_data: list[list[float | int]] = []
+        load_data: list[list[int]] = []
+        prev_p: MetricPoint | None = None
+        for p in history:
+            ts_ms = p.timestamp * 1000
+            if prev_p is not None and (p.timestamp - prev_p.timestamp) > 120 and prev_p.loads > 0:
+                load_data.append([(prev_p.timestamp + 60) * 1000, 0])
+            temp_data.append([ts_ms, p.temperature])
+            load_data.append([ts_ms, p.loads])
+            prev_p = p
+
+        now_ms = int(datetime.now(tz=UTC).timestamp() * 1000)
+        start_ms = now_ms - (range_days * 86400 * 1000)
+
+        if history:
+            time_since_last_ms = now_ms - history[-1].timestamp * 1000
+            if time_since_last_ms <= 120_000:
+                load_data.append([now_ms, history[-1].loads])
+                temp_data.append([now_ms, history[-1].temperature])
+            elif history[-1].loads > 0:
+                load_data.append([(history[-1].timestamp + 60) * 1000, 0])
+
+        temp_name = i18n.t("chart.temperature")
+        loads_name = i18n.t("chart.loads")
+
+        return {
+            "animation": False,
+            "tooltip": {
+                "trigger": "axis",
+                "axisPointer": {"type": "cross"},
+            },
+            "legend": {
+                "data": [
+                    temp_name,
+                    {"name": loads_name, "icon": "roundRect"},
+                ],
+                "top": 0,
+                "textStyle": {"color": "#64748b"},
+            },
+            "grid": {
+                "left": 40,
+                "right": 40,
+                "top": 35,
+                "bottom": 25,
+            },
+            "xAxis": {
+                "type": "time",
+                "axisLine": {"lineStyle": {"color": "#94a3b8"}},
+                "axisLabel": {"color": "#64748b", "hideOverlap": True},
+                "splitLine": {"show": False},
+            },
+            "yAxis": [
+                {
+                    "type": "value",
+                    "name": "°C",
+                    "position": "left",
+                    "scale": True,
+                    "splitLine": {"lineStyle": {"color": "rgba(148, 163, 184, 0.15)"}},
+                    "axisLabel": {"color": "#f97316"},
+                },
+                {
+                    "type": "value",
+                    "name": "",
+                    "position": "right",
+                    "min": 0,
+                    "max": max(1, total_loads),
+                    "minInterval": 1,
+                    "splitLine": {"show": False},
+                    "axisLabel": {"color": "#3b82f6"},
+                },
+            ],
+            "dataZoom": [
+                {
+                    "type": "inside",
+                    "xAxisIndex": 0,
+                    "filterMode": "none",
+                    "startValue": start_ms,
+                    "endValue": now_ms,
+                }
+            ],
+            "series": [
+                {
+                    "name": loads_name,
+                    "type": "line",
+                    "step": "end",
+                    "yAxisIndex": 1,
+                    "data": load_data,
+                    "showSymbol": False,
+                    "itemStyle": {
+                        "color": "#3b82f6",
+                    },
+                    "lineStyle": {
+                        "color": "rgba(59, 130, 246, 0.7)",
+                        "width": 1.5,
+                    },
+                    "areaStyle": {
+                        "color": "rgba(59, 130, 246, 0.35)",
+                    },
+                    "z": 1,
+                },
+                {
+                    "name": temp_name,
+                    "type": "line",
+                    "yAxisIndex": 0,
+                    "data": temp_data,
+                    "smooth": True,
+                    "showSymbol": False,
+                    "lineStyle": {"color": "#f97316", "width": 2},
+                    "areaStyle": {
+                        "color": {
+                            "type": "linear",
+                            "x": 0,
+                            "y": 0,
+                            "x2": 0,
+                            "y2": 1,
+                            "colorStops": [
+                                {"offset": 0, "color": "rgba(249, 115, 22, 0.2)"},
+                                {"offset": 1, "color": "rgba(249, 115, 22, 0.0)"},
+                            ],
+                        }
+                    },
+                    "z": 3,
+                },
+            ],
+        }

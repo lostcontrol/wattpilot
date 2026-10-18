@@ -24,6 +24,7 @@ from datetime import UTC, datetime
 
 import pykka
 
+from wattpilot.database import Database, MetricPoint
 from wattpilot.openweathermap import OpenWeatherMap
 from wattpilot.settings import SettingsFile
 from wattpilot.temperature import Temperature
@@ -49,6 +50,7 @@ class Snapshot:
     temperature_force: float | None = None
     schedule_start: int | None = None
     schedule_stop: int | None = None
+    history: list[MetricPoint] = field(default_factory=list)
 
 
 class BackendService:
@@ -59,12 +61,14 @@ class BackendService:
         wattpilot: pykka.ActorProxy[WattPilot],
         weather: pykka.ActorProxy[OpenWeatherMap],
         temperature: pykka.ActorProxy[Temperature],
+        database: pykka.ActorProxy[Database] | None = None,
         load_names: dict[int, str] | None = None,
         settings_file: SettingsFile | None = None,
     ) -> None:
         self.__wattpilot = wattpilot
         self.__weather = weather
         self.__temperature = temperature
+        self.__database = database
         self.__load_names = load_names or {}
         self.__settings_file = settings_file or SettingsFile()
         self.__logger = logging.getLogger(__name__)
@@ -107,12 +111,13 @@ class BackendService:
     def __read_snapshot(self) -> Snapshot:
         # Request all actor operations up front to obtain their Futures concurrently.
         forecast = self.__weather.get_forecast()
-        state = self.__wattpilot.state
+        state = self.__wattpilot.get_state()
         temperature = self.__temperature.get_temperature()
         loads = self.__wattpilot.get_active_loads()
         trigger = self.__wattpilot.get_schedule_trigger()
         will_run = self.__wattpilot.get_scheduled_by_weather()
         settings_future = self.__wattpilot.get_settings()
+        history_future = self.__database.get_history() if self.__database is not None else None
 
         # Collect results with timeouts so blocked actors do not hang the worker thread.
         timestamp, cloudiness = forecast.get(timeout=FUTURE_TIMEOUT)
@@ -120,6 +125,7 @@ class BackendService:
         active_names = [self.__load_names.get(pin, str(pin)) for pin in active_pins]
         all_configured = sorted(set(self.__load_names.values()))
         settings = settings_future.get(timeout=FUTURE_TIMEOUT)
+        history = history_future.get(timeout=FUTURE_TIMEOUT) if history_future is not None else []
 
         return Snapshot(
             ok=True,
@@ -136,6 +142,7 @@ class BackendService:
             temperature_force=settings.get("temperature_force"),
             schedule_start=settings.get("schedule_start"),
             schedule_stop=settings.get("schedule_stop"),
+            history=history,
         )
 
     def __apply_trigger(self, value: bool) -> None:
