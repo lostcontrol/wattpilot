@@ -87,6 +87,8 @@ Wattpilot is an intelligent water boiler controller designed to optimize photovo
 ### Pykka Actor Interactions
 - Remember that calling methods on actor proxies (`proxy.some_method()`) returns a **Future**.
 - Query the result with `.get()` when retrieving data synchronously.
+- **Avoid using `defer()`**: Calling `proxy.some_method.defer(...)` will stop the actor if the method raises an uncaught exception. Instead, invoke the proxy method directly (`proxy.some_method(...)`) or ensure the method handles exceptions internally.
+- **Do not access actor fields directly via proxy**: Never access attributes or fields directly through an actor proxy (e.g. `proxy.field.get()`). Always create a dedicated getter method on the actor (e.g. `def get_field(self) -> ...`) and query it via the proxy (`proxy.get_field().get()`).
 
 ### Object-Oriented Design & Abstractions
 - Prefer **Abstract Base Classes (`abc.ABC` with `@abstractmethod`)** over `typing.Protocol` (e.g. `Gpio` and `Sensor` base classes in `wattpilot/device.py`).
