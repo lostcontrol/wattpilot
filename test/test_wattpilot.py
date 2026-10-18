@@ -87,6 +87,7 @@ def wattpilot(mocker, config, power, gpio, weather, temperature):
         yield wattpilot
         wattpilot.halt.defer()
         assert wattpilot.is_halt().get()
+        assert wattpilot.get_state().get() == "halt"
         pykka.ActorRegistry.stop_all()
 
 
@@ -127,6 +128,7 @@ class TestWattPilot:
         power.get_power.return_value = FakeFuture(0)
         wattpilot.idle.defer()
         assert wattpilot.is_idle().get()
+        assert wattpilot.get_state().get() == "idle"
 
     def test_idle_enough_power_for_one_load(self, mocker, wattpilot, gpio, power):
         power.get_power.return_value = FakeFuture(-2000)

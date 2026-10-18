@@ -24,6 +24,7 @@ from typing import Final
 import pykka
 
 from .actor import WattPilotActor, WattPilotModel
+from .database import Database
 from .device import Gpio
 from .fronius import Fronius
 from .openweathermap import OpenWeatherMap
@@ -105,6 +106,7 @@ class WattPilot(WattPilotActor):
         gpio: Gpio,
         weather: pykka.ActorProxy[OpenWeatherMap],
         temperature: pykka.ActorProxy[Temperature],
+        database: pykka.ActorProxy[Database] | None = None,
     ) -> None:
         super().__init__()
 
@@ -149,6 +151,7 @@ class WattPilot(WattPilotActor):
         self.__power: pykka.ActorProxy[Fronius] = power
         self.__weather: pykka.ActorProxy[OpenWeatherMap] = weather
         self.__temperature: pykka.ActorProxy[Temperature] = temperature
+        self.__database: pykka.ActorProxy[Database] | None = database
 
         self.__hysteresis_to_grid: int = config.getint("main", "hysteresis_to_grid")
         self.__hysteresis_from_grid: int = config.getint("main", "hysteresis_from_grid")
@@ -201,18 +204,36 @@ class WattPilot(WattPilotActor):
         self.__schedule_start = int(schedule_start)
         self.__schedule_stop = int(schedule_stop)
 
+    def get_state(self) -> str:
+        return str(getattr(self, "state"))
+
     def get_active_loads(self) -> list[Load]:
         return copy.deepcopy(self.__active_loads)
 
+    def record_metrics(self) -> None:
+        if self.__database is not None:
+            try:
+                temp = self.__temperature.get_temperature().get()
+                self.__database.record(temp, len(self.__active_loads))
+            except Exception:
+                self.logger.exception("Failed to record metrics into database")
+
     def __stop_all_active(self) -> None:
+        had_active = bool(self.__active_loads)
         for load in self.__active_loads:
             load.set_pin(False)
         self.__active_loads = []
+        if had_active:
+            self.record_metrics()
 
     def __start_all_inactive(self) -> None:
+        added = False
         for load in self.__loads.get_inactive_loads(self.__active_loads):
             load.set_pin(True)
             self.__active_loads.append(load)
+            added = True
+        if added:
+            self.record_metrics()
 
     def on_enter_halt(self) -> None:
         self.logger.info("Entering halt state")
@@ -226,7 +247,7 @@ class WattPilot(WattPilotActor):
     def on_enter_idle(self) -> None:
         self.logger.info("Entering idle state")
         self.__stop_all_active()
-        self.__power.register_callback(self._proxy.update_power).get()
+        self.__power.register_callback(self.get_proxy().update_power).get()
         self.__power.run.defer(60)
 
     def get_scheduled_by_weather(self) -> bool:
@@ -300,7 +321,7 @@ class WattPilot(WattPilotActor):
 
     def on_enter_solar(self) -> None:
         self.logger.info("Entering solar state")
-        self.__power.register_callback(self._proxy.update_power).get()
+        self.__power.register_callback(self.get_proxy().update_power).get()
         self.__power.run.defer(30)
 
     def after_solar_power(self) -> None:
@@ -314,14 +335,48 @@ class WattPilot(WattPilotActor):
                 self.logger.info("Turning a load off, power consumption at %dW", power)
                 load = self.__active_loads.pop()
                 load.set_pin(False)
+                self.record_metrics()
         else:
             load = self.__loads.get_load(-power - self.__hysteresis_to_grid, self.__active_loads)
             if load is not None:
                 self.logger.info("Turning a load on, power generation at %dW", -power)
                 self.__active_loads.append(load)
                 load.set_pin(True)
+                self.record_metrics()
 
     def on_exit_solar(self) -> None:
         self.logger.info("Exiting solar state")
         self.__power.do_cancel.defer()
         self.__power.register_callback(None).get()
+
+
+class MetricPoller(WattPilotActor):
+    """Dedicated polling actor that periodically samples temperature and loads into the database."""
+
+    DEFAULT_DELAY: float = 60
+
+    def __init__(
+        self,
+        database: pykka.ActorProxy[Database],
+        temperature: pykka.ActorProxy[Temperature],
+        wattpilot: pykka.ActorProxy[WattPilot],
+    ) -> None:
+        super().__init__()
+        self.logger = logging.getLogger(__name__)
+        self.__database: pykka.ActorProxy[Database] = database
+        self.__temperature: pykka.ActorProxy[Temperature] = temperature
+        self.__wattpilot: pykka.ActorProxy[WattPilot] = wattpilot
+
+    def run(self, delay: float | int = DEFAULT_DELAY) -> None:
+        self.run_internal(delay)
+
+    def run_internal(self, delay: float | int) -> None:
+        try:
+            temp = self.__temperature.get_temperature().get()
+            active_loads = len(self.__wattpilot.get_active_loads().get())
+            self.__database.record(temp, active_loads)
+            self.logger.debug("Polled metrics: temp=%.1f loads=%d", temp, active_loads)
+        except Exception:
+            self.logger.exception("Failed to poll metrics")
+        finally:
+            self.do_delay(delay, "run_internal", args=[delay])

@@ -47,8 +47,11 @@ class WattPilotModel(Machine):
 class WattPilotActor(pykka.ThreadingActor):
     def __init__(self) -> None:
         super().__init__()
-        self._proxy: Any = self.actor_ref.proxy()
+        self.__proxy: Any = self.actor_ref.proxy()
         self.__timer: Timer | None = None
+
+    def get_proxy(self) -> Any:
+        return self.__proxy
 
     def on_failure(
         self,
@@ -82,7 +85,7 @@ class WattPilotActor(pykka.ThreadingActor):
         assert delay >= 0
         # Stop an already running timer
         self.__do_cancel()
-        func = getattr(self._proxy, method)
+        func = getattr(self.get_proxy(), method)
         if delay > 0:
             self.__timer = Timer(delay, func.defer, *args, **kwargs)
             self.__timer.start()
