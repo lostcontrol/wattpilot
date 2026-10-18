@@ -2,8 +2,7 @@ services:
     wattpilot:
         command: python wattpilot.py
         devices:
-            - "/dev/gpiomem:/dev/gpiomem"
-            - "/dev/mem:/dev/mem"
+            - "/dev/gpiochip0:/dev/gpiochip0"
         restart: unless-stopped
         logging:
             driver: "journald"

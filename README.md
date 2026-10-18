@@ -99,7 +99,7 @@ Access the development interface at [http://localhost:8088](http://localhost:808
 ```bash
 docker compose -f docker-compose.rpi.yml up -d
 ```
-Maps `/dev/gpiomem` and `/dev/mem` for native GPIO pin control and DS18B20 1-Wire temperature bus access.
+Maps `/dev/gpiochip0` for native GPIO pin control via `rpi-lgpio`.
 
 ---
 

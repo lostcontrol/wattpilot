@@ -13,7 +13,7 @@ classifiers = [
 dependencies = [
     "nicegui>=3.0",
     "pykka>=4.5.0",
-    "rpi-gpio>=0.7.1",
+    "rpi-lgpio>=0.6",
     "sqlalchemy>=2.0",
     "transitions>=0.9.3",
 ]
