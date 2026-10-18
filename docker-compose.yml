@@ -3,6 +3,7 @@ services:
         environment:
             - TZ=Europe/Zurich
             - WATTPILOT_SETTINGS=/data/config.ini.settings
+            - WATTPILOT_DB=/data/wattpilot.db
         build:
             context: .
             dockerfile: docker/runtime.Dockerfile

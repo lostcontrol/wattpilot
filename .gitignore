@@ -6,3 +6,6 @@ __pycache__
 .pytest_cache/
 .ruff_cache/
 *.egg-info/
+*.db
+*.db-shm
+*.db-wal
