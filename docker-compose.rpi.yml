@@ -1,6 +1,8 @@
 services:
     wattpilot:
         command: python wattpilot.py
+        environment:
+            - RPI_LGPIO_REVISION=a020d3
         devices:
             - "/dev/gpiochip0:/dev/gpiochip0"
         restart: unless-stopped
