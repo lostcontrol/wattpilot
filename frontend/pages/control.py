@@ -51,6 +51,8 @@ class ControlPage(Page):
         self.__start_val: ui.label | None = None
         self.__stop_slider: ui.slider | None = None
         self.__stop_val: ui.label | None = None
+        self.__solar_threshold_slider: ui.slider | None = None
+        self.__solar_threshold_val: ui.label | None = None
         self.__chart: SchedulePeriodChart | None = None
         self.__save_btn: ui.button | None = None
 
@@ -135,6 +137,23 @@ class ControlPage(Page):
                         min=0, max=23, step=1, value=6, on_change=self.__on_period_change
                     ).props("color=primary")
 
+            # Group 3: Solar forecast
+            with ui.column().classes("wp-settings-group"):
+                with ui.row().classes("wp-settings-header"):
+                    ui.icon("wb_sunny", size="sm")
+                    ui.label(i18n.t("settings.solar_forecast")).classes("wp-settings-title")
+
+                # Solar forecast threshold
+                with ui.column().classes("wp-settings-item"):
+                    with ui.row().classes("wp-settings-row"):
+                        with ui.column().classes("wp-settings-info"):
+                            ui.label(i18n.t("settings.solar_threshold")).classes("wp-settings-label")
+                            ui.label(i18n.t("settings.solar_threshold_desc")).classes("wp-settings-desc")
+                        self.__solar_threshold_val = ui.label("15.0 kWh").classes("wp-settings-value")
+                    self.__solar_threshold_slider = ui.slider(
+                        min=0.0, max=50.0, step=0.5, value=15.0, on_change=self.__on_threshold_change
+                    ).props("color=primary")
+
             # Save Button
             with ui.row().classes("wp-settings-actions"):
                 self.__save_btn = (
@@ -153,6 +172,13 @@ class ControlPage(Page):
             self.__temp_solar_val.text = f"{self.__temp_solar_slider.value:.1f} °C"
         if self.__temp_force_slider and self.__temp_force_val:
             self.__temp_force_val.text = f"{self.__temp_force_slider.value:.1f} °C"
+
+    def __on_threshold_change(self) -> None:
+        if self.__syncing:
+            return
+        self.__dirty = True
+        if self.__solar_threshold_slider and self.__solar_threshold_val:
+            self.__solar_threshold_val.text = f"{self.__solar_threshold_slider.value:.1f} kWh"
 
     def __on_period_change(self) -> None:
         if self.__syncing:
@@ -185,6 +211,7 @@ class ControlPage(Page):
         t_sched = float(self.__temp_schedule_slider.value) if self.__temp_schedule_slider else 55.0
         t_solar = float(self.__temp_solar_slider.value) if self.__temp_solar_slider else 60.0
         t_force = float(self.__temp_force_slider.value) if self.__temp_force_slider else 55.0
+        solar_thresh = float(self.__solar_threshold_slider.value) if self.__solar_threshold_slider else 15.0
 
         self.__save_btn.disable()
         try:
@@ -195,6 +222,7 @@ class ControlPage(Page):
                     temperature_force=t_force,
                     schedule_start=start,
                     schedule_stop=stop,
+                    solar_threshold=solar_thresh,
                 )
             except Exception:
                 logging.getLogger(__name__).exception("Unable to save settings")
@@ -239,6 +267,11 @@ class ControlPage(Page):
                 self.__stop_slider.value = snapshot.schedule_stop
                 if self.__stop_val:
                     self.__stop_val.text = f"{snapshot.schedule_stop:02d}:00"
+
+            if snapshot.solar_threshold is not None and self.__solar_threshold_slider:
+                self.__solar_threshold_slider.value = snapshot.solar_threshold
+                if self.__solar_threshold_val:
+                    self.__solar_threshold_val.text = f"{snapshot.solar_threshold:.1f} kWh"
 
             if self.__chart and snapshot.schedule_start is not None and snapshot.schedule_stop is not None:
                 self.__chart.update(snapshot.schedule_start, snapshot.schedule_stop)

@@ -20,10 +20,9 @@
   --wp-solar: #22c55e;
   --wp-glow: transparent;
 
-  /* Weather cloud styling */
-  --wp-cloud-bar: #64748b;
-  --wp-cloud-track: #e2e8f0;
-  --wp-cloud-icon: #64748b;
+  /* Solar forecast styling */
+  --wp-solar-forecast-icon: #f59e0b;
+  --wp-solar-progress-track: #fef3c7;
 }
 
 .body--dark {
@@ -38,10 +37,9 @@
   --wp-chip-bg: #1e293b;
   --wp-chip-border: #334155;
 
-  /* Weather cloud styling dark */
-  --wp-cloud-bar: #94a3b8;
-  --wp-cloud-track: #334155;
-  --wp-cloud-icon: #94a3b8;
+  /* Solar forecast styling dark */
+  --wp-solar-forecast-icon: #fbbf24;
+  --wp-solar-progress-track: rgba(245, 158, 11, 0.15);
 }
 
 /* Global body styling */
@@ -442,7 +440,7 @@ body {
   animation: wp-pulse 1.6s ease-in-out infinite;
 }
 
-/* Weather tile */
+/* Solar forecast tile */
 .wp-weather-summary {
   display: flex;
   align-items: center;
@@ -456,24 +454,24 @@ body {
   gap: 12px;
 }
 
-.wp-cloud-icon {
-  color: var(--wp-cloud-icon) !important;
+.wp-solar-forecast-icon {
+  color: var(--wp-solar-forecast-icon) !important;
 }
 
-.wp-cloud-progress {
+.wp-solar-progress {
   height: 8px !important;
   border-radius: 999px !important;
-  background: var(--wp-cloud-track) !important;
+  background: var(--wp-solar-progress-track) !important;
   overflow: hidden;
 }
 
-.wp-cloud-progress .q-linear-progress__track {
-  background: var(--wp-cloud-track) !important;
+.wp-solar-progress .q-linear-progress__track {
+  background: var(--wp-solar-progress-track) !important;
   opacity: 1 !important;
 }
 
-.wp-cloud-progress .q-linear-progress__model {
-  background: var(--wp-cloud-bar) !important;
+.wp-solar-progress .q-linear-progress__model {
+  background: linear-gradient(90deg, #f59e0b, #eab308) !important;
   border-radius: 999px !important;
   transition: width 0.3s ease;
 }

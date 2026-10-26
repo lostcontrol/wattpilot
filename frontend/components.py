@@ -197,54 +197,61 @@ LoadChips = HeatingBars
 
 
 class WeatherTile:
-    """Weather forecast and solar schedule trigger prediction."""
+    """Solar production forecast and off-peak schedule trigger prediction."""
 
     def __init__(self) -> None:
         self.__card = ui.card().classes("wp-card")
         with self.__card:
             with ui.row().classes("wp-card-header"):
                 ui.label(i18n.t("weather.title")).classes("wp-label")
-                self.__time_label = ui.label("-").classes("wp-subtext text-xs")
+                self.__date_label = ui.label("-").classes("wp-subtext text-xs")
             with ui.row().classes("wp-weather-summary"):
                 with ui.row().classes("wp-weather-info"):
-                    self.__icon = ui.icon("cloud", size="2.5rem").classes("wp-cloud-icon")
+                    self.__icon = ui.icon("wb_sunny", size="2.5rem").classes("wp-solar-forecast-icon")
                     with ui.column().classes("gap-0"):
-                        self.__cloud_label = ui.label("-").classes("wp-value text-2xl")
-                        ui.label(i18n.t("weather.cloudiness")).classes("wp-subtext text-xs")
+                        self.__forecast_label = ui.label("-").classes("wp-value text-2xl")
+                        ui.label(i18n.t("weather.production")).classes("wp-subtext text-xs")
             self.__progress = (
-                ui.linear_progress(value=0.0, show_value=False).props("rounded size=8px").classes("wp-cloud-progress")
+                ui.linear_progress(value=0.0, show_value=False).props("rounded size=8px").classes("wp-solar-progress")
             )
             self.__trigger_label = ui.label(i18n.t("weather.pending")).classes("wp-weather-forecast-badge")
 
-    def update(self, cloudiness: int | None, forecast_time: datetime | None, will_run: bool) -> None:
-        if cloudiness is None or cloudiness < 0:
-            self.__cloud_label.text = "-"
+    def update(
+        self,
+        solar_forecast: float | None,
+        forecast_date: str | None,
+        will_run: bool,
+        threshold: float | None = None,
+    ) -> None:
+        if solar_forecast is None or solar_forecast < 0:
+            self.__forecast_label.text = "-"
             self.__progress.value = 0.0
             self.__trigger_label.text = i18n.t("weather.unavailable")
-            self.__icon.name = "cloud_off"
-            self.__time_label.text = "-"
+            self.__icon.name = "wb_twilight"
+            self.__date_label.text = "-"
             return
 
-        self.__cloud_label.text = f"{cloudiness}%"
-        self.__progress.value = cloudiness / 100.0
+        self.__forecast_label.text = f"{solar_forecast:.1f} kWh"
+        max_val = max((threshold or 15.0) * 2.0, 30.0)
+        self.__progress.value = min(1.0, max(0.0, solar_forecast / max_val))
 
-        if cloudiness < 20:
-            self.__icon.name = "cloud_queue"
+        if forecast_date:
+            self.__date_label.text = i18n.t("weather.forecast_for", date=forecast_date)
         else:
-            self.__icon.name = "cloud"
-
-        if forecast_time:
-            local_time = forecast_time.astimezone()
-            self.__time_label.text = i18n.t("weather.forecast_at", time=local_time.strftime("%H:%M"))
-        else:
-            self.__time_label.text = "-"
+            self.__date_label.text = "-"
 
         if will_run:
+            self.__icon.name = "wb_twilight"
             self.__trigger_label.text = i18n.t("weather.will_run")
             self.__trigger_label.classes(remove="is-solar", add="is-run")
         else:
+            self.__icon.name = "wb_sunny"
             self.__trigger_label.text = i18n.t("weather.will_not_run")
             self.__trigger_label.classes(remove="is-run", add="is-solar")
+
+
+# Backwards compatibility alias
+SolarForecastTile = WeatherTile
 
 
 class SchedulePeriodChart:

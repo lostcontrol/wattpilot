@@ -26,8 +26,8 @@ import pykka
 from .actor import WattPilotActor, WattPilotModel
 from .database import Database
 from .device import Gpio
+from .forecastsolar import ForecastSolar
 from .fronius import Fronius
-from .openweathermap import OpenWeatherMap
 from .settings import in_schedule_window, validate_settings
 from .temperature import Temperature
 
@@ -104,7 +104,7 @@ class WattPilot(WattPilotActor):
         config: configparser.ConfigParser,
         power: pykka.ActorProxy[Fronius],
         gpio: Gpio,
-        weather: pykka.ActorProxy[OpenWeatherMap],
+        forecast: pykka.ActorProxy[ForecastSolar],
         temperature: pykka.ActorProxy[Temperature],
         database: pykka.ActorProxy[Database] | None = None,
     ) -> None:
@@ -149,7 +149,7 @@ class WattPilot(WattPilotActor):
         self.__loads: AllLoad = AllLoad.from_config(config, gpio)
         self.__active_loads: list[Load] = []
         self.__power: pykka.ActorProxy[Fronius] = power
-        self.__weather: pykka.ActorProxy[OpenWeatherMap] = weather
+        self.__forecast: pykka.ActorProxy[ForecastSolar] = forecast
         self.__temperature: pykka.ActorProxy[Temperature] = temperature
         self.__database: pykka.ActorProxy[Database] | None = database
 
@@ -158,7 +158,7 @@ class WattPilot(WattPilotActor):
         self.__schedule_trigger: bool = False
         self.__schedule_start: int = config.getint("main", "schedule_start")
         self.__schedule_stop: int = config.getint("main", "schedule_stop")
-        self.__cloudiness_level: int = config.getint("main", "cloudiness_level")
+        self.__solar_threshold: float = config.getfloat("main", "solar_threshold")
         self.__temperature_schedule: float = config.getfloat("temperature", "temperature_schedule")
         self.__temperature_solar: float = config.getfloat("temperature", "temperature_solar")
         self.__temperature_force: float = config.getfloat("temperature", "temperature_force")
@@ -173,6 +173,7 @@ class WattPilot(WattPilotActor):
             "temperature_force": self.__temperature_force,
             "schedule_start": self.__schedule_start,
             "schedule_stop": self.__schedule_stop,
+            "solar_threshold": self.__solar_threshold,
         }
 
     def set_settings(
@@ -182,6 +183,7 @@ class WattPilot(WattPilotActor):
         temperature_force: float | int,
         schedule_start: int,
         schedule_stop: int,
+        solar_threshold: float | int,
     ) -> None:
         validate_settings(
             temperature_schedule=temperature_schedule,
@@ -189,20 +191,24 @@ class WattPilot(WattPilotActor):
             temperature_force=temperature_force,
             schedule_start=schedule_start,
             schedule_stop=schedule_stop,
+            solar_threshold=solar_threshold,
         )
         self.logger.info(
-            "Updating settings: schedule=%.1f°C, solar=%.1f°C, force=%.1f°C, period=%d..%d",
+            "Updating settings: schedule=%.1f°C, solar=%.1f°C, force=%.1f°C, period=%d..%d, solar_threshold=%.1f kWh",
             temperature_schedule,
             temperature_solar,
             temperature_force,
             schedule_start,
             schedule_stop,
+            solar_threshold,
         )
         self.__temperature_schedule = float(temperature_schedule)
         self.__temperature_solar = float(temperature_solar)
         self.__temperature_force = float(temperature_force)
         self.__schedule_start = int(schedule_start)
         self.__schedule_stop = int(schedule_stop)
+        self.__solar_threshold = float(solar_threshold)
+        self.__forecast.set_schedule_start(self.__schedule_start).get()
 
     def get_state(self) -> str:
         return str(getattr(self, "state"))
@@ -239,10 +245,10 @@ class WattPilot(WattPilotActor):
         self.logger.info("Entering halt state")
         self.__stop_all_active()
         self.__power.do_cancel.defer()
-        self.__weather.do_cancel.defer()
+        self.__forecast.do_cancel.defer()
 
     def on_exit_halt(self) -> None:
-        self.__weather.run.defer(3600)
+        self.__forecast.run.defer(ForecastSolar.DEFAULT_DELAY)
 
     def on_enter_idle(self) -> None:
         self.logger.info("Entering idle state")
@@ -250,8 +256,8 @@ class WattPilot(WattPilotActor):
         self.__power.register_callback(self.get_proxy().update_power).get()
         self.__power.run.defer(60)
 
-    def get_scheduled_by_weather(self) -> bool:
-        return self.__weather.get_cloudiness().get() > self.__cloudiness_level
+    def get_scheduled_by_forecast(self) -> bool:
+        return self.__forecast.get_production().get() < self.__solar_threshold
 
     def check_temperature_min(self, limit: float | int, hysteresis: float | int = 1) -> bool:
         temperature = self.__temperature.get_temperature().get()
@@ -273,7 +279,7 @@ class WattPilot(WattPilotActor):
             if self.check_temperature_min(self.__temperature_solar):
                 self.do_delay(0, "solar")
         elif in_schedule_window(self.__get_now().hour, self.__schedule_start, self.__schedule_stop):
-            if self.__schedule_trigger or self.get_scheduled_by_weather():
+            if self.__schedule_trigger or self.get_scheduled_by_forecast():
                 if self.check_temperature_min(self.__temperature_schedule):
                     self.do_delay(0, "schedule")
 

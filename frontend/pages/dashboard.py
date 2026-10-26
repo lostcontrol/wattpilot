@@ -210,9 +210,10 @@ class DashboardPage(Page):
             )
         if self.__weather:
             self.__weather.update(
-                snapshot.cloudiness if snapshot.ok else None,
-                snapshot.forecast_time if snapshot.ok else None,
+                snapshot.solar_forecast if snapshot.ok else None,
+                snapshot.forecast_date if snapshot.ok else None,
                 snapshot.will_run if snapshot.ok else False,
+                snapshot.solar_threshold if snapshot.ok else None,
             )
         if self.__history:
             self.__history.update(

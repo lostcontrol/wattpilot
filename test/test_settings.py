@@ -33,6 +33,7 @@ from wattpilot.settings import (
     in_schedule_window,
     validate_hour,
     validate_settings,
+    validate_solar_threshold,
     validate_temperature,
 )
 
@@ -99,6 +100,25 @@ class TestSettingsValidation:
         with pytest.raises(TypeError):
             validate_hour(cast(Any, "2"))
 
+    def test_valid_solar_threshold(self):
+        assert validate_solar_threshold(0.0) == 0.0
+        assert validate_solar_threshold(50.0) == 50.0
+        assert validate_solar_threshold(15.0) == 15.0
+        assert validate_solar_threshold(15.5) == 15.5
+        assert validate_solar_threshold(15) == 15.0
+
+    def test_invalid_solar_threshold(self):
+        with pytest.raises(ValueError, match="must be between"):
+            validate_solar_threshold(-0.5)
+        with pytest.raises(ValueError, match="must be between"):
+            validate_solar_threshold(50.5)
+        with pytest.raises(ValueError, match="must be a multiple"):
+            validate_solar_threshold(15.3)
+        with pytest.raises(TypeError):
+            validate_solar_threshold(True)
+        with pytest.raises(TypeError):
+            validate_solar_threshold(cast(Any, "15.0"))
+
     def test_validate_settings_success(self):
         validate_settings(
             temperature_schedule=50.0,
@@ -106,6 +126,7 @@ class TestSettingsValidation:
             temperature_force=55.5,
             schedule_start=23,
             schedule_stop=2,
+            solar_threshold=15.0,
         )
 
     def test_validate_settings_equal_hours(self):
@@ -116,6 +137,7 @@ class TestSettingsValidation:
                 temperature_force=55.0,
                 schedule_start=3,
                 schedule_stop=3,
+                solar_threshold=15.0,
             )
 
 
@@ -135,6 +157,7 @@ class TestSettingsFile:
                 "temperature_force": 50.0,
                 "schedule_start": 23,
                 "schedule_stop": 2,
+                "solar_threshold": 16.5,
             }
         )
 
@@ -144,6 +167,7 @@ class TestSettingsFile:
         assert loaded["temperature_force"] == 50.0
         assert loaded["schedule_start"] == 23
         assert loaded["schedule_stop"] == 2
+        assert loaded["solar_threshold"] == 16.5
 
     def test_preserves_existing_config(self, tmp_path: Path):
         file_path = tmp_path / "custom.ini"
@@ -155,6 +179,7 @@ class TestSettingsFile:
                 "temperature_schedule": 55.0,
                 "schedule_start": 1,
                 "schedule_stop": 5,
+                "solar_threshold": 12.0,
             }
         )
 
@@ -164,6 +189,7 @@ class TestSettingsFile:
         assert cp.getfloat("temperature", "temperature_schedule") == 55.0
         assert cp.getint("main", "schedule_start") == 1
         assert cp.getint("main", "schedule_stop") == 5
+        assert cp.getfloat("main", "solar_threshold") == 12.0
 
     def test_cascading_priority(self, tmp_path: Path):
         # 1. Base config
@@ -227,17 +253,18 @@ class TestBackendServiceSettings:
         wattpilot_mock.get_state.return_value.get.return_value = "idle"
         wattpilot_mock.get_active_loads.return_value.get.return_value = []
         wattpilot_mock.get_schedule_trigger.return_value.get.return_value = False
-        wattpilot_mock.get_scheduled_by_weather.return_value.get.return_value = False
+        wattpilot_mock.get_scheduled_by_forecast.return_value.get.return_value = False
         wattpilot_mock.get_settings.return_value.get.return_value = {
             "temperature_schedule": 52.0,
             "temperature_solar": 62.0,
             "temperature_force": 50.0,
             "schedule_start": 23,
             "schedule_stop": 2,
+            "solar_threshold": 15.0,
         }
 
-        weather_mock = mocker.Mock()
-        weather_mock.get_forecast.return_value.get.return_value = (0, 0)
+        forecast_mock = mocker.Mock()
+        forecast_mock.get_forecast.return_value.get.return_value = ("2022-01-04", 18.2)
 
         temp_mock = mocker.Mock()
         temp_mock.get_temperature.return_value.get.return_value = 55.0
@@ -248,7 +275,7 @@ class TestBackendServiceSettings:
         sf = SettingsFile(tmp_path / "settings.ini")
         service = BackendService(
             wattpilot_mock,
-            weather_mock,
+            forecast_mock,
             temp_mock,
             database=db_mock,
             load_names={1: "load_1"},
@@ -259,11 +286,14 @@ class TestBackendServiceSettings:
         assert snapshot.ok
         assert len(snapshot.history) == 1
         assert snapshot.history[0].temperature == 55.0
+        assert snapshot.solar_forecast == 18.2
+        assert snapshot.forecast_date == "2022-01-04"
         assert snapshot.temperature_schedule == 52.0
         assert snapshot.temperature_solar == 62.0
         assert snapshot.temperature_force == 50.0
         assert snapshot.schedule_start == 23
         assert snapshot.schedule_stop == 2
+        assert snapshot.solar_threshold == 15.0
 
         ok = await service.set_settings(
             temperature_schedule=55.5,
@@ -271,6 +301,7 @@ class TestBackendServiceSettings:
             temperature_force=48.0,
             schedule_start=1,
             schedule_stop=5,
+            solar_threshold=20.0,
         )
         assert ok
         wattpilot_mock.set_settings.assert_called_once_with(
@@ -279,11 +310,13 @@ class TestBackendServiceSettings:
             temperature_force=48.0,
             schedule_start=1,
             schedule_stop=5,
+            solar_threshold=20.0,
         )
         saved = sf.load()
         assert saved["temperature_schedule"] == 55.5
         assert saved["schedule_start"] == 1
         assert saved["schedule_stop"] == 5
+        assert saved["solar_threshold"] == 20.0
 
 
 class TestControlPageSettingsSync:
@@ -295,14 +328,15 @@ class TestControlPageSettingsSync:
             loads=[],
             temperature=50.0,
             schedule_trigger=False,
-            cloudiness=0,
-            forecast_time=None,
+            solar_forecast=15.0,
+            forecast_date="2022-01-04",
             will_run=False,
             temperature_schedule=52.0,
             temperature_solar=61.0,
             temperature_force=48.0,
             schedule_start=22,
             schedule_stop=4,
+            solar_threshold=15.0,
         )
 
         page = ControlPage(store)
@@ -312,6 +346,7 @@ class TestControlPageSettingsSync:
         # Programmatic sync must not leave the page in dirty state
         assert not getattr(page, "_ControlPage__dirty")
         assert getattr(page, "_ControlPage__temp_schedule_slider").value == 52.0
+        assert getattr(page, "_ControlPage__solar_threshold_slider").value == 15.0
 
         # Subsequent backend update while clean should update sliders
         store.snapshot = Snapshot(
@@ -320,19 +355,21 @@ class TestControlPageSettingsSync:
             loads=[],
             temperature=50.0,
             schedule_trigger=False,
-            cloudiness=0,
-            forecast_time=None,
+            solar_forecast=18.0,
+            forecast_date="2022-01-04",
             will_run=False,
             temperature_schedule=56.0,
             temperature_solar=63.0,
             temperature_force=50.0,
             schedule_start=1,
             schedule_stop=5,
+            solar_threshold=22.5,
         )
         page.update()
 
         assert not getattr(page, "_ControlPage__dirty")
         assert getattr(page, "_ControlPage__temp_schedule_slider").value == 56.0
+        assert getattr(page, "_ControlPage__solar_threshold_slider").value == 22.5
 
         # User modifying a slider sets dirty=True
         getattr(page, "_ControlPage__temp_schedule_slider").value = 58.0
@@ -345,14 +382,15 @@ class TestControlPageSettingsSync:
             loads=[],
             temperature=50.0,
             schedule_trigger=False,
-            cloudiness=0,
-            forecast_time=None,
+            solar_forecast=15.0,
+            forecast_date="2022-01-04",
             will_run=False,
             temperature_schedule=50.0,
             temperature_solar=60.0,
             temperature_force=50.0,
             schedule_start=2,
             schedule_stop=6,
+            solar_threshold=15.0,
         )
         page.update()
         assert getattr(page, "_ControlPage__temp_schedule_slider").value == 58.0

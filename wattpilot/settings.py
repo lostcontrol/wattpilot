@@ -27,6 +27,9 @@ DEFAULT_SETTINGS_FILE: Final[str] = "config.ini.settings"
 TEMP_MIN: Final[float] = 45.0
 TEMP_MAX: Final[float] = 65.0
 TEMP_STEP: Final[float] = 0.5
+SOLAR_THRESHOLD_MIN: Final[float] = 0.0
+SOLAR_THRESHOLD_MAX: Final[float] = 50.0
+SOLAR_THRESHOLD_STEP: Final[float] = 0.5
 
 
 def in_schedule_window(hour: int, start: int, stop: int) -> bool:
@@ -71,12 +74,25 @@ def validate_hour(value: int, name: str = "hour") -> int:
     return value
 
 
+def validate_solar_threshold(value: float | int, name: str = "solar_threshold") -> float:
+    """Validate solar forecast threshold value is between SOLAR_THRESHOLD_MIN and SOLAR_THRESHOLD_MAX in 0.5 steps."""
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        raise TypeError(f"{name} must be a number, got {type(value).__name__}")
+    fval = float(value)
+    if fval < SOLAR_THRESHOLD_MIN or fval > SOLAR_THRESHOLD_MAX:
+        raise ValueError(f"{name} must be between {SOLAR_THRESHOLD_MIN} kWh and {SOLAR_THRESHOLD_MAX} kWh, got {fval}")
+    if abs(round(fval * 2) - fval * 2) > 1e-6:
+        raise ValueError(f"{name} must be a multiple of {SOLAR_THRESHOLD_STEP} kWh, got {fval}")
+    return fval
+
+
 def validate_settings(
     temperature_schedule: float | int,
     temperature_solar: float | int,
     temperature_force: float | int,
     schedule_start: int,
     schedule_stop: int,
+    solar_threshold: float | int,
 ) -> None:
     """Validate all configurable settings."""
     validate_temperature(temperature_schedule, "temperature_schedule")
@@ -86,6 +102,7 @@ def validate_settings(
     stop = validate_hour(schedule_stop, "schedule_stop")
     if start == stop:
         raise ValueError("schedule_start and schedule_stop cannot be equal")
+    validate_solar_threshold(solar_threshold, "solar_threshold")
 
 
 class SettingsFile:
@@ -116,6 +133,8 @@ class SettingsFile:
             settings["schedule_start"] = parser.getint("main", "schedule_start")
         if parser.has_option("main", "schedule_stop"):
             settings["schedule_stop"] = parser.getint("main", "schedule_stop")
+        if parser.has_option("main", "solar_threshold"):
+            settings["solar_threshold"] = parser.getfloat("main", "solar_threshold")
 
         for key in ("temperature_schedule", "temperature_solar", "temperature_force"):
             if parser.has_option("temperature", key):
@@ -141,6 +160,8 @@ class SettingsFile:
             parser["main"]["schedule_start"] = str(int(settings["schedule_start"]))
         if "schedule_stop" in settings:
             parser["main"]["schedule_stop"] = str(int(settings["schedule_stop"]))
+        if "solar_threshold" in settings:
+            parser["main"]["solar_threshold"] = f"{float(settings['solar_threshold']):.1f}"
 
         for key in ("temperature_schedule", "temperature_solar", "temperature_force"):
             if key in settings:

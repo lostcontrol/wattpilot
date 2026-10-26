@@ -23,8 +23,8 @@ import pykka
 import pytest
 
 from wattpilot.database import RETENTION_SECONDS, Database, MetricPoint
+from wattpilot.forecastsolar import ForecastSolar
 from wattpilot.fronius import Fronius
-from wattpilot.openweathermap import OpenWeatherMap
 from wattpilot.temperature import Temperature
 from wattpilot.wattpilot import MetricPoller, WattPilot
 
@@ -103,7 +103,7 @@ class TestWattPilotDatabaseIntegration:
             hysteresis_from_grid = 0
             schedule_start = 2
             schedule_stop = 6
-            cloudiness_level = 75
+            solar_threshold = 15.0
 
             [temperature]
             temperature_schedule = 50
@@ -126,13 +126,13 @@ class TestWattPilotDatabaseIntegration:
         power = mocker.Mock(spec=Fronius)
         power.get_power.return_value = FakeFuture(0)
         gpio = mocker.Mock()
-        weather = mocker.Mock(spec=OpenWeatherMap)
+        forecast = mocker.Mock(spec=ForecastSolar)
         temperature = mocker.Mock(spec=Temperature)
         temperature.get_temperature.return_value = FakeFuture(50.0)
 
         db_proxy = Database.start(path=tmp_path / "int_test.db").proxy()
         try:
-            wp = WattPilot.start(config, power, gpio, weather, temperature, database=db_proxy).proxy()
+            wp = WattPilot.start(config, power, gpio, forecast, temperature, database=db_proxy).proxy()
 
             # Transition from halt to idle, then to force
             wp.idle().get()
@@ -153,13 +153,13 @@ class TestWattPilotDatabaseIntegration:
     def test_metric_poller_samples_database(self, mocker, config, tmp_path: Path):
         power = mocker.Mock(spec=Fronius)
         gpio = mocker.Mock()
-        weather = mocker.Mock(spec=OpenWeatherMap)
+        forecast = mocker.Mock(spec=ForecastSolar)
         temperature = mocker.Mock(spec=Temperature)
         temperature.get_temperature.return_value = FakeFuture(58.4)
 
         db_proxy = Database.start(path=tmp_path / "poller_test.db").proxy()
         try:
-            wp = WattPilot.start(config, power, gpio, weather, temperature, database=db_proxy).proxy()
+            wp = WattPilot.start(config, power, gpio, forecast, temperature, database=db_proxy).proxy()
             poller = MetricPoller.start(db_proxy, temperature, wp).proxy()
             poller.run_internal(60).get()
 

@@ -22,8 +22,8 @@ import pykka
 import pytest
 from freezegun import freeze_time
 
+from wattpilot.forecastsolar import ForecastSolar
 from wattpilot.fronius import Fronius
-from wattpilot.openweathermap import OpenWeatherMap
 from wattpilot.temperature import Temperature
 from wattpilot.wattpilot import WattPilot
 
@@ -40,8 +40,8 @@ def gpio(mocker):
 
 
 @pytest.fixture
-def weather(mocker):
-    return mocker.Mock(spec=OpenWeatherMap)
+def forecast(mocker):
+    return mocker.Mock(spec=ForecastSolar)
 
 
 @pytest.fixture
@@ -59,7 +59,7 @@ def config():
         hysteresis_from_grid = 0
         schedule_start = 2
         schedule_stop = 6
-        cloudiness_level = 75
+        solar_threshold = 15.0
 
         [temperature]
         temperature_schedule = 50
@@ -80,10 +80,10 @@ def config():
 
 
 @pytest.fixture
-def wattpilot(mocker, config, power, gpio, weather, temperature):
+def wattpilot(mocker, config, power, gpio, forecast, temperature):
     WattPilot.DEFAULT_DELAY = 0.01
     with freeze_time("1981-05-30 00:00:01"):
-        wattpilot = WattPilot.start(config, power, gpio, weather, temperature).proxy()
+        wattpilot = WattPilot.start(config, power, gpio, forecast, temperature).proxy()
         yield wattpilot
         wattpilot.halt.defer()
         assert wattpilot.is_halt().get()
@@ -246,9 +246,9 @@ class TestWattPilot:
         assert len(wattpilot.get_active_loads().get()) == 2
         assert gpio.set_pin.call_count == 0
 
-    def test_schedule_no_trigger(self, mocker, wattpilot, gpio, power, weather):
+    def test_schedule_no_trigger(self, mocker, wattpilot, gpio, power, forecast):
         power.get_power.return_value = FakeFuture(0)
-        weather.get_cloudiness.return_value = FakeFuture(0)
+        forecast.get_production.return_value = FakeFuture(25.0)
         wattpilot.idle.defer()
         wattpilot.set_schedule_trigger(False).get()
         with freeze_time("1981-05-30 02:00:01", tick=True):
@@ -256,9 +256,9 @@ class TestWattPilot:
             assert wattpilot.is_idle().get()
         assert gpio.set_pin.call_count == 0
 
-    def test_schedule_trigger_set(self, mocker, wattpilot, gpio, power, weather, temperature):
+    def test_schedule_trigger_set(self, mocker, wattpilot, gpio, power, forecast, temperature):
         power.get_power.return_value = FakeFuture(0)
-        weather.get_cloudiness.return_value = FakeFuture(0)
+        forecast.get_production.return_value = FakeFuture(25.0)
         temperature.get_temperature.return_value = FakeFuture(40)
         wattpilot.idle.defer()
         wattpilot.set_schedule_trigger(True).get()
@@ -283,34 +283,34 @@ class TestWattPilot:
             wait_with_timeout(lambda: wattpilot.is_idle().get())
         gpio.set_pin.assert_has_calls([mocker.call(1, False), mocker.call(2, False)])
 
-    def test_schedule_no_trigger_sunny_tomorrow(self, mocker, wattpilot, gpio, power, weather):
+    def test_schedule_no_trigger_sunny_tomorrow(self, mocker, wattpilot, gpio, power, forecast):
         power.get_power.return_value = FakeFuture(0)
         wattpilot.idle.defer()
         wattpilot.set_schedule_trigger(False).get()
-        weather.get_cloudiness.return_value = FakeFuture(0)
+        forecast.get_production.return_value = FakeFuture(25.0)
         with freeze_time("1981-05-30 02:00:01", tick=True):
             wattpilot.update_power().get()
             assert wattpilot.is_idle().get()
         assert gpio.set_pin.call_count == 0
 
-    def test_schedule_no_trigger_not_sunny_tomorrow(self, mocker, wattpilot, gpio, power, weather, temperature):
+    def test_schedule_no_trigger_not_sunny_tomorrow(self, mocker, wattpilot, gpio, power, forecast, temperature):
         power.get_power.return_value = FakeFuture(0)
         temperature.get_temperature.return_value = FakeFuture(40)
         wattpilot.idle.defer()
         wattpilot.set_schedule_trigger(False).get()
-        weather.get_cloudiness.return_value = FakeFuture(100)
+        forecast.get_production.return_value = FakeFuture(5.0)
         with freeze_time("1981-05-30 02:00:01", tick=True):
             wattpilot.update_power().get()
             assert wattpilot.is_schedule().get()
         gpio.set_pin.assert_has_calls([mocker.call(1, True), mocker.call(2, True)])
 
     def test_schedule_no_trigger_not_sunny_tomorrow_temperature_high(
-        self, mocker, wattpilot, gpio, power, weather, temperature
+        self, mocker, wattpilot, gpio, power, forecast, temperature
     ):
         power.get_power.return_value = FakeFuture(0)
         wattpilot.idle.defer()
         wattpilot.set_schedule_trigger(False).get()
-        weather.get_cloudiness.return_value = FakeFuture(100)
+        forecast.get_production.return_value = FakeFuture(5.0)
         with freeze_time("1981-05-30 02:00:01", tick=True):
             wattpilot.update_power().get()
             assert wattpilot.is_idle().get()
@@ -322,6 +322,7 @@ class TestWattPilot:
         assert settings["temperature_force"] == 55.0
         assert settings["schedule_start"] == 2
         assert settings["schedule_stop"] == 6
+        assert settings["solar_threshold"] == 15.0
 
         wattpilot.set_settings(
             temperature_schedule=52.5,
@@ -329,6 +330,7 @@ class TestWattPilot:
             temperature_force=48.0,
             schedule_start=23,
             schedule_stop=2,
+            solar_threshold=18.5,
         ).get()
 
         updated = wattpilot.get_settings().get()
@@ -337,8 +339,9 @@ class TestWattPilot:
         assert updated["temperature_force"] == 48.0
         assert updated["schedule_start"] == 23
         assert updated["schedule_stop"] == 2
+        assert updated["solar_threshold"] == 18.5
 
-    def test_schedule_wrap_around_midnight(self, mocker, wattpilot, gpio, power, weather, temperature):
+    def test_schedule_wrap_around_midnight(self, mocker, wattpilot, gpio, power, forecast, temperature):
         # Configure schedule window from 23:00 to 02:00
         wattpilot.set_settings(
             temperature_schedule=50.0,
@@ -346,10 +349,11 @@ class TestWattPilot:
             temperature_force=55.0,
             schedule_start=23,
             schedule_stop=2,
+            solar_threshold=15.0,
         ).get()
 
         power.get_power.return_value = FakeFuture(0)
-        weather.get_cloudiness.return_value = FakeFuture(0)
+        forecast.get_production.return_value = FakeFuture(25.0)
         temperature.get_temperature.return_value = FakeFuture(40)
         wattpilot.idle.defer()
         wattpilot.set_schedule_trigger(True).get()

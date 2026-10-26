@@ -20,12 +20,11 @@ from __future__ import annotations
 import asyncio
 import logging
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
 
 import pykka
 
 from wattpilot.database import Database, MetricPoint
-from wattpilot.openweathermap import OpenWeatherMap
+from wattpilot.forecastsolar import ForecastSolar
 from wattpilot.settings import SettingsFile
 from wattpilot.temperature import Temperature
 from wattpilot.wattpilot import WattPilot
@@ -42,14 +41,15 @@ class Snapshot:
     loads: list[str] = field(default_factory=list)
     all_loads: list[str] = field(default_factory=list)
     schedule_trigger: bool = False
-    cloudiness: int | None = None
-    forecast_time: datetime | None = None
+    solar_forecast: float | None = None
+    forecast_date: str | None = None
     will_run: bool = False
     temperature_schedule: float | None = None
     temperature_solar: float | None = None
     temperature_force: float | None = None
     schedule_start: int | None = None
     schedule_stop: int | None = None
+    solar_threshold: float | None = None
     history: list[MetricPoint] = field(default_factory=list)
 
 
@@ -59,14 +59,14 @@ class BackendService:
     def __init__(
         self,
         wattpilot: pykka.ActorProxy[WattPilot],
-        weather: pykka.ActorProxy[OpenWeatherMap],
+        forecast: pykka.ActorProxy[ForecastSolar],
         temperature: pykka.ActorProxy[Temperature],
         database: pykka.ActorProxy[Database] | None = None,
         load_names: dict[int, str] | None = None,
         settings_file: SettingsFile | None = None,
     ) -> None:
         self.__wattpilot = wattpilot
-        self.__weather = weather
+        self.__forecast = forecast
         self.__temperature = temperature
         self.__database = database
         self.__load_names = load_names or {}
@@ -98,6 +98,7 @@ class BackendService:
         temperature_force: float,
         schedule_start: int,
         schedule_stop: int,
+        solar_threshold: float,
     ) -> bool:
         return await asyncio.to_thread(
             self.__apply_settings,
@@ -106,21 +107,22 @@ class BackendService:
             temperature_force,
             schedule_start,
             schedule_stop,
+            solar_threshold,
         )
 
     def __read_snapshot(self) -> Snapshot:
         # Request all actor operations up front to obtain their Futures concurrently.
-        forecast = self.__weather.get_forecast()
+        forecast_future = self.__forecast.get_forecast()
         state = self.__wattpilot.get_state()
         temperature = self.__temperature.get_temperature()
         loads = self.__wattpilot.get_active_loads()
         trigger = self.__wattpilot.get_schedule_trigger()
-        will_run = self.__wattpilot.get_scheduled_by_weather()
+        will_run = self.__wattpilot.get_scheduled_by_forecast()
         settings_future = self.__wattpilot.get_settings()
         history_future = self.__database.get_history() if self.__database is not None else None
 
         # Collect results with timeouts so blocked actors do not hang the worker thread.
-        timestamp, cloudiness = forecast.get(timeout=FUTURE_TIMEOUT)
+        forecast_date, solar_forecast = forecast_future.get(timeout=FUTURE_TIMEOUT)
         active_pins = [load.pin for load in loads.get(timeout=FUTURE_TIMEOUT)]
         active_names = [self.__load_names.get(pin, str(pin)) for pin in active_pins]
         all_configured = sorted(set(self.__load_names.values()))
@@ -134,14 +136,15 @@ class BackendService:
             loads=sorted(active_names),
             all_loads=all_configured,
             schedule_trigger=trigger.get(timeout=FUTURE_TIMEOUT),
-            cloudiness=cloudiness,
-            forecast_time=datetime.fromtimestamp(timestamp, tz=UTC) if timestamp else None,
+            solar_forecast=solar_forecast,
+            forecast_date=forecast_date,
             will_run=will_run.get(timeout=FUTURE_TIMEOUT),
             temperature_schedule=settings.get("temperature_schedule"),
             temperature_solar=settings.get("temperature_solar"),
             temperature_force=settings.get("temperature_force"),
             schedule_start=settings.get("schedule_start"),
             schedule_stop=settings.get("schedule_stop"),
+            solar_threshold=settings.get("solar_threshold"),
             history=history,
         )
 
@@ -162,6 +165,7 @@ class BackendService:
         temperature_force: float,
         schedule_start: int,
         schedule_stop: int,
+        solar_threshold: float,
     ) -> bool:
         self.__wattpilot.set_settings(
             temperature_schedule=temperature_schedule,
@@ -169,6 +173,7 @@ class BackendService:
             temperature_force=temperature_force,
             schedule_start=schedule_start,
             schedule_stop=schedule_stop,
+            solar_threshold=solar_threshold,
         ).get(timeout=FUTURE_TIMEOUT)
         if self.__settings_file:
             self.__settings_file.save(
@@ -178,6 +183,7 @@ class BackendService:
                     "temperature_force": temperature_force,
                     "schedule_start": schedule_start,
                     "schedule_stop": schedule_stop,
+                    "solar_threshold": solar_threshold,
                 }
             )
         return True

@@ -30,8 +30,8 @@ from frontend.service import BackendService
 from frontend.store import SnapshotStore
 from wattpilot.database import Database
 from wattpilot.device import Gpio, GpioDevice, TempSensorDevice
+from wattpilot.forecastsolar import ForecastSolar
 from wattpilot.fronius import Fronius
-from wattpilot.openweathermap import OpenWeatherMap
 from wattpilot.pvoutput import PVOutput
 from wattpilot.settings import DEFAULT_SETTINGS_FILE, SettingsFile
 from wattpilot.temperature import Sensor, Temperature
@@ -62,7 +62,7 @@ def main() -> None:
 
     database: pykka.ActorProxy[Database] = Database.start().proxy()
     power: pykka.ActorProxy[Fronius] = Fronius.start(configuration).proxy()
-    weather: pykka.ActorProxy[OpenWeatherMap] = OpenWeatherMap.start(configuration).proxy()
+    forecast: pykka.ActorProxy[ForecastSolar] = ForecastSolar.start(configuration).proxy()
 
     gpio: Gpio
     temperature_sensor: Sensor
@@ -78,7 +78,7 @@ def main() -> None:
     temperature: pykka.ActorProxy[Temperature] = Temperature.start(configuration, temperature_sensor).proxy()
     pvoutput: pykka.ActorProxy[PVOutput] = PVOutput.start(configuration, temperature).proxy()
     wattpilot: pykka.ActorProxy[WattPilot] = WattPilot.start(
-        configuration, power, gpio, weather, temperature, database
+        configuration, power, gpio, forecast, temperature, database
     ).proxy()
 
     pin_to_name = {
@@ -88,7 +88,7 @@ def main() -> None:
     }
     service = BackendService(
         wattpilot,
-        weather,
+        forecast,
         temperature,
         database=database,
         load_names=pin_to_name,

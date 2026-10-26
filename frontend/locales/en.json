@@ -38,13 +38,13 @@
     "element": "Heating element {id}"
   },
   "weather": {
-    "title": "Weather Forecast",
-    "cloudiness": "Cloud cover",
-    "forecast_at": "Forecast for {time}",
-    "unavailable": "Weather data unavailable",
+    "title": "Solar Forecast",
+    "production": "Expected production",
+    "forecast_for": "Forecast for {date}",
+    "unavailable": "Forecast unavailable",
     "pending": "Schedule check pending...",
-    "will_run": "High cloudiness: schedule will be triggered",
-    "will_not_run": "Good weather: solar surplus expected"
+    "will_run": "Low solar forecast: schedule will be triggered",
+    "will_not_run": "Sufficient solar forecast: solar surplus expected"
   },
   "trigger": {
     "title": "Schedule Trigger",
@@ -96,6 +96,9 @@
     "start_desc": "Beginning of the scheduled heating window",
     "stop": "End time",
     "stop_desc": "End of the scheduled heating window",
+    "solar_forecast": "Solar Forecast",
+    "solar_threshold": "Minimum solar forecast",
+    "solar_threshold_desc": "Minimum forecast required to skip off-peak heating",
     "duration": "{start}:00 → {stop}:00 ({duration} h)",
     "equal_hours_error": "Start and end times cannot be equal",
     "save": "Save Settings",

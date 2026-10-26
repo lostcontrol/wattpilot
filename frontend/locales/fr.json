@@ -38,13 +38,13 @@
     "element": "Corps de chauffe {id}"
   },
   "weather": {
-    "title": "Prévisions météo",
-    "cloudiness": "Couverture nuageuse",
-    "forecast_at": "Prévisions pour {time}",
-    "unavailable": "Données météo indisponibles",
+    "title": "Prévisions solaires",
+    "production": "Production estimée",
+    "forecast_for": "Prévisions pour le {date}",
+    "unavailable": "Prévisions indisponibles",
     "pending": "Vérification de la programmation en cours...",
-    "will_run": "Forte nébulosité : la programmation sera activée",
-    "will_not_run": "Beau temps : surplus solaire attendu"
+    "will_run": "Faible production solaire : la programmation sera activée",
+    "will_not_run": "Production solaire suffisante : surplus solaire attendu"
   },
   "trigger": {
     "title": "Déclencheur programmé",
@@ -96,6 +96,9 @@
     "start_desc": "Début de la plage de chauffe programmée",
     "stop": "Heure de fin",
     "stop_desc": "Fin de la plage de chauffe programmée",
+    "solar_forecast": "Prévision solaire",
+    "solar_threshold": "Production solaire minimale",
+    "solar_threshold_desc": "Production minimale requise pour éviter la chauffe en heures creuses",
     "duration": "{start}:00 → {stop}:00 ({duration} h)",
     "equal_hours_error": "L'heure de début et de fin ne peuvent pas être identiques",
     "save": "Enregistrer les paramètres",
