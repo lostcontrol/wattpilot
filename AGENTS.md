@@ -8,7 +8,7 @@ This document provides context, architectural rules, engineering standards, and 
 
 Wattpilot is an intelligent water boiler controller designed to optimize photovoltaic (PV) auto-consumption. Instead of expensive variable-resistance hardware, it discretely controls multiple heating elements (typically 3 electrical resistances) in a hot water boiler based on:
 - Solar surplus exported to the grid (interfacing with Fronius inverters).
-- Forecast cloudiness / weather forecasts (OpenWeatherMap API).
+- Solar production forecasts (Forecast.Solar API).
 - Configurable off-peak electricity schedule windows.
 - Manual "force" heating mode with temperature hysteresis.
 
@@ -132,7 +132,7 @@ Wattpilot is an intelligent water boiler controller designed to optimize photovo
   - Refer to electrical loads as **"Heating element"** ("Corps de chauffe" in French), not generic hardware terms like "GPIO".
 - Visual representations must be intuitive:
   - Heating loads are displayed as 3 progressive bars filling up with distinct colors (e.g. green, orange, red) with proper spacing.
-  - Cloudiness / weather forecast indicators should clearly represent cloud probability without misleading inverted solar graphics.
+  - Solar forecast indicators should clearly represent expected production (kWh) and schedule decision.
   - Avoid unnecessary decorative clutter (e.g. do not add meaningless status dots next to page titles, avoid redundant labels like "3 active" when the graphic already shows it).
 - Add clear help text for potentially ambiguous inputs (e.g. help text for schedule "End time").
 - Self-contained components: encapsulate component-specific rendering (such as SVG generation) directly inside the component class (e.g. `SchedulePeriodChart`).
